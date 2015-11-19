@@ -1,0 +1,8 @@
+CS312 PA4 README
+----------------
+
+- The class TypeInference illustrates how to use the provided type date structures and how to perform union-find with them. Read and understand the example code in TypeInference.cpp
+
+- You will probably find it ncessary to associate types with expressions. For this, you probably want to add a Type* field to the Expression class
+
+- Please submit along with your written report in pdf format a tar.gz file with your *complete* type inference project. Be sure to run "make clean" before zipping up and submitting your files.
