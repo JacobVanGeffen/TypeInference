@@ -21,10 +21,12 @@ Expression* get_wrapper(Type* type) {
 	return wrapper;
 }
 
+// TODO make types work w/ lists
 Expression* TypeInference::eval_unop(AstUnOp* b) {
 	Expression* e = b->get_expression();
 	Expression* eval_e = eval(e);
 
+	// TODO fancy list things
 	switch (b->get_unop_type()) {
 		case HD:
 		{
@@ -46,74 +48,29 @@ Expression* TypeInference::eval_unop(AstUnOp* b) {
 		}
 		case ISNIL:
 		{
-			if (eval_e->get_type() == AST_NIL) {
-				return AstInt::make(1);
-			} else {
-				return AstInt::make(0);
-			}
+			return get_wrapper(ConstantType::make("Int"));
 		}
 		case PRINT:
 		{
-			if(eval_e->get_type() == AST_STRING) {
-				AstString* s = static_cast<AstString*>(eval_e);
-				cout << s->get_string() << endl;
-			} else {
-				cout << eval_e->to_value() << endl;
-			}
-			return AstInt::make(0);
+			return get_wrapper(ConstantType::make("Int"));
 		}
 		default:
 			assert(false);
 	}
 }
 
-Expression* eval_binop_int(Expression* b, Expression* eval_e1, Expression* eval_e2, string x, const std::function<int(int, int)>& lambda) {
-	if (eval_e1->get_type() == AST_INT && eval_e2->get_type() == AST_INT) {
-		AstInt* i1 = static_cast<AstInt*>(eval_e1);
-		AstInt* i2 = static_cast<AstInt*>(eval_e2);
-		int c1 = i1->get_int();
-		int c2 = i2->get_int();
+// TODO check these two
 
-		return AstInt::make(lambda(c1, c2));
-	} else {
-		if (eval_e1->get_type() == AST_LIST || eval_e2->get_type() == AST_LIST) {
-			report_error(b, "Binpo @ is the only legal binop for lists");
-		} else if (eval_e1->get_type() == AST_NIL || eval_e2->get_type() == AST_NIL) {
-			report_error(b, "Nil can only be used with binop @");
-		} else if (eval_e1->get_type() != eval_e2->get_type()) {
-			report_error(b, "Binop can only be applied to expressions of same type");
-		} else if (eval_e1->get_type() == AST_STRING && eval_e2->get_type() == AST_STRING) {
-			report_error(b, "Binop " + x + " cannot be applied to strings");
-		}
-		assert(false);
-	}
+Expression* eval_binop_int(Expression* b, Expression* eval_e1, Expression* eval_e2, string x, const std::function<int(int, int)>& lambda) {
+	eval_e1->type->unify(ConstantType::make("Int"));
+	eval_e2->type->unify(ConstantType::make("Int"));
+	return get_wrapper(ConstantType::make("Int"));
 }
 
+// Problem: Allows list + list
 Expression* eval_binop_int_or_string(Expression* b, Expression* eval_e1, Expression* eval_e2, const std::function<int(int, int)>& int_lambda, const std::function<bool(string, string)>& string_lambda) {
-	if (eval_e1->get_type() == AST_INT && eval_e2->get_type() == AST_INT) {
-		AstInt* i1 = static_cast<AstInt*>(eval_e1);
-		AstInt* i2 = static_cast<AstInt*>(eval_e2);
-		int c1 = i1->get_int();
-		int c2 = i2->get_int();
-
-		return AstInt::make(int_lambda(c1, c2));
-	} else if (eval_e1->get_type() == AST_STRING && eval_e2->get_type() == AST_STRING){
-		AstString* s1 = static_cast<AstString*>(eval_e1);
-		AstString* s2 = static_cast<AstString*>(eval_e2);
-		string ss1 = s1->get_string();
-		string ss2 = s2->get_string();
-
-		return AstInt::make(string_lambda(ss1, ss2));
-	} else {
-		if (eval_e1->get_type() == AST_LIST || eval_e2->get_type() == AST_LIST) {
-			report_error(b, "Binpo @ is the only legal binop for lists");
-		} else if (eval_e1->get_type() == AST_NIL || eval_e2->get_type() == AST_NIL) {
-			report_error(b, "Nil can only be used with binop @");
-		} else if (eval_e1->get_type() != eval_e2->get_type()) {
-			report_error(b, "Binop can only be applied to expressions of same type");
-		}
-		assert(false);
-	}
+	eval_e1->type->unify(eval_e2->type);
+	return eval_e1;
 }
 
 Expression* TypeInference::eval_binop(AstBinOp* b) {
@@ -270,18 +227,20 @@ Expression* TypeInference::eval(Expression* e) {
 
 		case AST_UNOP:
 		{
-			//AstUnOp* b = static_cast<AstUnOp*>(e);
-			//res_exp = eval_unop(b); TODO
+			AstUnOp* b = static_cast<AstUnOp*>(e);
+			res_exp = eval_unop(b); 
 			break;
 		}
 
+		// TODO not typed
 		case AST_BINOP:
 		{
-			//AstBinOp* b = static_cast<AstBinOp*>(e);
-			//res_exp = eval_binop(b); TODO
+			AstBinOp* b = static_cast<AstBinOp*>(e);
+			res_exp = eval_binop(b); 
 			break;
 		}
 
+		// Typed (theoretically)
 		case AST_LAMBDA:
 		{
 			AstLambda* lambda = static_cast<AstLambda*>(e);
@@ -316,6 +275,7 @@ Expression* TypeInference::eval(Expression* e) {
 			break;
 		}
 
+		// TODO Not typed
 		case AST_EXPRESSION_LIST:
 		{
 			AstExpressionList* el = static_cast<AstExpressionList*>(e);
@@ -348,15 +308,17 @@ Expression* TypeInference::eval(Expression* e) {
 			break;
 		}
 
+		// Typed
 		case AST_READ:
 		{
 			AstRead* r = static_cast<AstRead*>(e);
-			string input;
-			getline(cin, input);
+			string input = "0";
 			if (r->read_integer()) {
 				res_exp = AstInt::make(string_to_int(input));
+				res_exp->type = ConstantType::make("Int");
 			} else {
 				res_exp = AstString::make(input);
+				res_exp->type = ConstantType::make("String");
 			}
 			break;
 		}
