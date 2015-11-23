@@ -1,14 +1,14 @@
 #include "ListType.h"
 
 
-ListType::ListType(Type& head, Type& tail):Type(TYPE_LIST)
+ListType::ListType(Type* head, Type* tail):Type(TYPE_LIST)
 {
-  this->head = &head;
-  this->tail = &tail;
+  this->head = head;
+  this->tail = tail;
 }
    
 
-ListType* ListType::make(Type& head, Type& tail)
+ListType* ListType::make(Type* head, Type* tail)
 {
   ListType* t = new ListType(head, tail);
   t = static_cast<ListType*>(get_type(t));

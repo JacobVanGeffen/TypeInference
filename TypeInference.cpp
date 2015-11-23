@@ -3,12 +3,11 @@
 #include "ast/ConstantType.h"
 #include "ast/VariableType.h"
 #include "ast/FunctionType.h"
+#include "ast/ListType.h"
 #include "ast/expression.h"
 #include "TypeInference.h"
-#include <functional>
 
 int typeVarCount = 0;
-void eval_poop(Expression* b, Expression* eval_e1, Expression* eval_e2, string x, const std::function<void(int)>& asdf) {}
 void report_error(Expression* e, const string & s) {
 	cout << "Run-time error in expression " << e->to_value() << endl;
 	cout << s << endl;
@@ -26,25 +25,17 @@ Expression* TypeInference::eval_unop(AstUnOp* b) {
 	Expression* e = b->get_expression();
 	Expression* eval_e = eval(e);
 
-	// TODO fancy list things
+	// TODO fancy list things, should get errors right now
 	switch (b->get_unop_type()) {
-		case HD:
+		case HD: // TODO NOT YET SUPPORTED
 		{
-			if (eval_e->get_type() == AST_LIST) {
-				AstList* l = static_cast<AstList*>(eval_e);
-				return l->get_hd();
-			} else {
-				return eval_e;
-			}
+			// Assume all types are lists
+			// return get_wrapper(eval_e->head);
 		}
-		case TL:
+		case TL: // TODO NOT YET SUPPORTED
 		{
-			if (eval_e->get_type() == AST_LIST) {
-				AstList* l = static_cast<AstList*>(eval_e);
-				return l->get_tl();
-			} else {
-				return AstNil::make();
-			}
+			// Assume all types are lists
+			// return get_wrapper(eval_e->tail);
 		}
 		case ISNIL:
 		{
@@ -61,15 +52,17 @@ Expression* TypeInference::eval_unop(AstUnOp* b) {
 
 // TODO check these two
 
-Expression* eval_binop_int(Expression* b, Expression* eval_e1, Expression* eval_e2, string x, const std::function<int(int, int)>& lambda) {
-	eval_e1->type->unify(ConstantType::make("Int"));
-	eval_e2->type->unify(ConstantType::make("Int"));
+Expression* eval_binop_int(Expression* b, Expression* eval_e1, Expression* eval_e2) {
+	// UNIFY
+	assert(eval_e1->type->unify(ConstantType::make("Int")));
+	assert(eval_e2->type->unify(ConstantType::make("Int")));
 	return get_wrapper(ConstantType::make("Int"));
 }
 
 // Problem: Allows list + list
-Expression* eval_binop_int_or_string(Expression* b, Expression* eval_e1, Expression* eval_e2, const std::function<int(int, int)>& int_lambda, const std::function<bool(string, string)>& string_lambda) {
-	eval_e1->type->unify(eval_e2->type);
+Expression* eval_binop_int_or_string(Expression* b, Expression* eval_e1, Expression* eval_e2) {
+	// UNIFY
+	assert(eval_e1->type->unify(eval_e2->type));
 	return eval_e1;
 }
 
@@ -80,63 +73,23 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 	Expression* eval_e2 = eval(e2);
 
 	switch (b->get_binop_type()) {
-		case PLUS:
-		{
-			if (eval_e1->get_type() == AST_INT && eval_e2->get_type() == AST_INT) {
-				AstInt* i1 = static_cast<AstInt*>(eval_e1);
-				AstInt* i2 = static_cast<AstInt*>(eval_e2);
-				int c1 = i1->get_int();
-				int c2 = i2->get_int();
-				return AstInt::make(c1 + c2);
-			} else if (eval_e1->get_type() == AST_STRING && eval_e2->get_type() == AST_STRING){
-				AstString* s1 = static_cast<AstString*>(eval_e1);
-				AstString* s2 = static_cast<AstString*>(eval_e2);
-				string ss1 = s1->get_string();
-				string ss2 = s2->get_string();
-
-				return AstString::make(ss1 + ss2);
-			} else {
-				if (eval_e1->get_type() == AST_LIST || eval_e2->get_type() == AST_LIST) {
-					report_error(b, "Binpo @ is the only legal binop for lists");
-				} else if (eval_e1->get_type() == AST_NIL || eval_e2->get_type() == AST_NIL) {
-					report_error(b, "Nil can only be used with binop @");
-				} else if (eval_e1->get_type() != eval_e2->get_type()) {
-					report_error(b, "Binop can only be applied to expressions of same type");
-				}
-				assert(false);
-			}
-			break;
-		}
-
-		case MINUS:
-			return eval_binop_int(b, eval_e1, eval_e2, "-", [](int x, int y) { return x - y; });
-		case TIMES:
-			return eval_binop_int(b, eval_e1, eval_e2, "*", [](int x, int y) { return x * y; });
-		case DIVIDE:
-			return eval_binop_int(b, eval_e1, eval_e2, "/", [](int x, int y) { return x / y; });
-		case AND:
-			return eval_binop_int(b, eval_e1, eval_e2, "&", [](int x, int y) { return x && y; });
-		case OR:
-			return eval_binop_int(b, eval_e1, eval_e2, "|", [](int x, int y) { return x || y; });
 		case EQ:
-			return eval_binop_int_or_string(b, eval_e1, eval_e2, [](int x, int y) { return x == y; }, [](string x, string y) { return x == y; });
 		case NEQ:
-			return eval_binop_int_or_string(b, eval_e1, eval_e2, [](int x, int y) { return x != y; }, [](string x, string y) { return x != y; });
+		case PLUS:
+			return eval_binop_int_or_string(b, eval_e1, eval_e2);
+		case MINUS:
+		case TIMES:
+		case DIVIDE:
+		case AND:
+		case OR:
 		case LT:
-			return eval_binop_int(b, eval_e1, eval_e2, "<", [](int x, int y) { return x < y; });
 		case LEQ:
-			return eval_binop_int(b, eval_e1, eval_e2, "<=", [](int x, int y) { return x <= y; });
 		case GT:
-			return eval_binop_int(b, eval_e1, eval_e2, ">", [](int x, int y) { return x > y; });
 		case GEQ:
-			return eval_binop_int(b, eval_e1, eval_e2, ">=", [](int x, int y) { return x >= y; });
+			return eval_binop_int(b, eval_e1, eval_e2);
 		case CONS:
 		{
-			if (eval_e2->get_type() != AST_NIL) {
-				return AstList::make(eval_e1, eval_e2);
-			} else {
-				return eval_e1;
-			}
+			return get_wrapper(ListType::make(eval_e1->type, eval_e2->type));
 		}
 		default:
 		{
@@ -202,7 +155,9 @@ Expression* TypeInference::eval(Expression* e) {
 			// Type Inference 
 			Type* id_var = VariableType::make("v" + typeVarCount);
 			typeVarCount++;
-			id_var->unify(e1_prime->type);
+			
+			// UNIFY
+			assert(id_var->unify(e1_prime->type));
 			
 			res_exp = e2_prime;
 			break;
@@ -210,15 +165,18 @@ Expression* TypeInference::eval(Expression* e) {
 
 		case AST_BRANCH:
 		{
+			cout << "branch" << endl;
 			AstBranch* branch = static_cast<AstBranch*>(e);
 			Expression* pred_prime = eval(branch->get_pred());
 
-			pred_prime->type->unify(ConstantType::make("Int"));
+			// UNIFY
+			assert(pred_prime->type->unify(ConstantType::make("Int")));
 
 			Expression* res_exp1 = eval(branch->get_then_exp());
 			Expression* res_exp2 = eval(branch->get_else_exp());
 
-			res_exp1->type->unify(res_exp2->type);
+			// UNIFY
+			assert(res_exp1->type->unify(res_exp2->type));
 			
 			res_exp = res_exp1; // could be 1 or 2, doesn't matter
 
@@ -232,7 +190,6 @@ Expression* TypeInference::eval(Expression* e) {
 			break;
 		}
 
-		// TODO not typed
 		case AST_BINOP:
 		{
 			AstBinOp* b = static_cast<AstBinOp*>(e);
@@ -287,10 +244,6 @@ Expression* TypeInference::eval(Expression* e) {
 				return eval_e1;
 			}
 
-			if (eval_e1->get_type() != AST_LAMBDA) {
-				report_error(e, "Only lambda expressions can be applied to other expressions");
-			}
-
 			AstLambda* lambda = static_cast<AstLambda*>(eval_e1);
 			AstIdentifier* identifier = lambda->get_formal();
 			Expression* body = lambda->get_body();
@@ -330,7 +283,9 @@ Expression* TypeInference::eval(Expression* e) {
 }
 
 
-TypeInference::TypeInference(Expression * e) {
-// CODE GOES HERE
+TypeInference::TypeInference(Expression* e) {
+    // TODO CODE GOES HERE
 	sym_tab.push();
+	eval(e);
+	cout << "Passed!" << endl;
 }

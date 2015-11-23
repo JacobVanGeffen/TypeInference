@@ -104,6 +104,7 @@ int main(int argc, char** argv)
   }
 
   if(res_expr != NULL) {
+	  cout << res_expr->to_string() << endl;
 	  TypeInference ti(res_expr);
   }
 

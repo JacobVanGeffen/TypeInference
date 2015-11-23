@@ -3,7 +3,7 @@ CFLAGS = -g -Wall -std=c++11
 INC=-. ./ast
 INC_PARAMS=$(foreach d, $(INC), -I$d)
 
-OBJs =   parser.tab.o lex.yy.o  Expression.o SymbolTable.o frontend.o TypeInference.o AstRead.o AstNil.o AstList.o AstUnOp.o AstBranch.o AstExpressionList.o AstIdentifierList.o AstBinOp.o  AstIdentifier.o AstInt.o AstLambda.o AstLet.o AstString.o Type.o ConstantType.o VariableType.o FunctionType.o 
+OBJs =   parser.tab.o lex.yy.o  Expression.o SymbolTable.o frontend.o TypeInference.o AstRead.o AstNil.o AstList.o AstUnOp.o AstBranch.o AstExpressionList.o AstIdentifierList.o AstBinOp.o  AstIdentifier.o AstInt.o AstLambda.o AstLet.o AstString.o Type.o ConstantType.o VariableType.o FunctionType.o ListType.o
 
 default: parser
 

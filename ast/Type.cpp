@@ -114,7 +114,4 @@ bool Type::unify(Type* other)
   }
   
   return false;
-  
-  
-  
 }
