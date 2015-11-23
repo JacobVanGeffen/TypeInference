@@ -1,3 +1,4 @@
+
 #include "FunctionType.h"
 
 
@@ -13,7 +14,6 @@ FunctionType* FunctionType::make(const string& name, const vector<Type*> & args)
   FunctionType* t = new FunctionType(name, args);
   t = static_cast<FunctionType*>(get_type(t));
   return t;
-  
 }
 
 bool FunctionType::operator<(const Type& other)

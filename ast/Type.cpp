@@ -86,7 +86,7 @@ void Type::compute_union(Type* other)
   
 }
 
-
+// TODO Consider List types in a similar way to function types
 bool Type::unify(Type* other)
 {
   Type* t1 = this->find();
