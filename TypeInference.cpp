@@ -106,7 +106,9 @@ Expression* TypeInference::eval(Expression* e) {
 		case AST_INT:
 		{
 			res_exp = e;
-			res_exp->type = ConstantType::make("Int");
+			if (res_exp->type == nullptr) {
+				res_exp->type = ConstantType::make("Int");
+			}
 			break;
 		}
 
@@ -124,10 +126,13 @@ Expression* TypeInference::eval(Expression* e) {
 			break;
 		}
 
+		// NOTE: Shouldn't really ever reach this point
 		case AST_LIST:
 		{
 			res_exp = e;
-			// Do our cool list type stuff here 
+			// Evaluate the head and tail? (probs not)
+			AstList* list = static_cast<AstList*>(e);
+			res_exp->type = ListType::make(list->get_hd()->type, list->get_tl()->type);
 			break;
 		}
 
@@ -232,7 +237,7 @@ Expression* TypeInference::eval(Expression* e) {
 			break;
 		}
 
-		// TODO Not typed
+		// Typed
 		case AST_EXPRESSION_LIST:
 		{
 			AstExpressionList* el = static_cast<AstExpressionList*>(e);
@@ -244,19 +249,23 @@ Expression* TypeInference::eval(Expression* e) {
 				return eval_e1;
 			}
 
-			AstLambda* lambda = static_cast<AstLambda*>(eval_e1);
-			AstIdentifier* identifier = lambda->get_formal();
-			Expression* body = lambda->get_body();
-			Expression* sub = body->substitute(identifier, expressions[1]);
-			Expression* sub_eval = eval(sub);
+			Expression* eval_e2 = eval(expressions[1]);
+			FunctionType* funType = static_cast<FunctionType*>(eval_e1->type);
+
+			// UNIFY
+			funType->get_args()[0]->unify(eval_e2->type);
+
+			vector<Type*> new_types = vector<Type*>(funType->get_args().begin() + 1, funType->get_args().end());
+			Type* resultType = FunctionType::make("f" + typeVarCount, new_types);
+			typeVarCount++;
 
 			if (expressions.size() > 2) {
 				vector<Expression*> new_expressions = vector<Expression*>(expressions.begin() + 2, expressions.end());
-				new_expressions.insert(new_expressions.begin(), sub_eval);
+				new_expressions.insert(new_expressions.begin(), get_wrapper(resultType));
 				AstExpressionList* new_el = AstExpressionList::make(new_expressions);
 				res_exp = eval(new_el);
 			} else {
-				res_exp = sub_eval;
+				res_exp = get_wrapper(resultType);
 			}
 			break;
 		}
@@ -286,6 +295,6 @@ Expression* TypeInference::eval(Expression* e) {
 TypeInference::TypeInference(Expression* e) {
     // TODO CODE GOES HERE
 	sym_tab.push();
-	eval(e);
+ 	eval(e);
 	cout << "Passed!" << endl;
 }
