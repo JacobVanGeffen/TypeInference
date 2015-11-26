@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -g -Wall -std=c++11
 INC=-. ./ast
 INC_PARAMS=$(foreach d, $(INC), -I$d)
-TESTS=$(patsubst tests/given/%.l,test%,$(sort $(wildcard tests/given/?.l)))
+TESTS=$(patsubst tests/given/%.L,test%,$(sort $(wildcard tests/given/?.L)))
 
 OBJs =   parser.tab.o lex.yy.o  Expression.o SymbolTable.o frontend.o TypeInference.o AstRead.o AstNil.o AstList.o AstUnOp.o AstBranch.o AstExpressionList.o AstIdentifierList.o AstBinOp.o  AstIdentifier.o AstInt.o AstLambda.o AstLet.o AstString.o Type.o ConstantType.o VariableType.o FunctionType.o ListType.o
 
@@ -23,8 +23,8 @@ Expression.o:	ast/*.h ast/*.cpp #ast/Expression.cpp ast/Expression.h ast/AstStri
 test: $(TESTS);
 
 $(TESTS): test% : parser
-	@echo -n "$*.l ... "
-	-@./l-type-inference tests/given/$*.l > $*.out 2>&1
+	@echo -n "$*.L ... "
+	-@./l-type-inference tests/given/$*.L > $*.out 2>&1
 	-@((grep -q "passed\!" $*.out) && echo "pass") || echo "failed"
 
 clean:
