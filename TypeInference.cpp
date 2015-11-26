@@ -14,7 +14,7 @@ void report_error(Expression* e, const string & s) {
 	exit(1);
 }
 
-Expression* get_wrapper(Type* type) {
+Expression* make_wrapper(Type* type) {
 	Expression* wrapper = AstInt::make(0);
 	wrapper->type = type;
 	return wrapper;
@@ -30,20 +30,20 @@ Expression* TypeInference::eval_unop(AstUnOp* b) {
 		case HD: // TODO NOT YET SUPPORTED
 		{
 			// Assume all types are lists
-			// return get_wrapper(eval_e->head);
+			// return make_wrapper(eval_e->head);
 		}
 		case TL: // TODO NOT YET SUPPORTED
 		{
 			// Assume all types are lists
-			// return get_wrapper(eval_e->tail);
+			// return make_wrapper(eval_e->tail);
 		}
 		case ISNIL:
 		{
-			return get_wrapper(ConstantType::make("Int"));
+			return make_wrapper(ConstantType::make("Int"));
 		}
 		case PRINT:
 		{
-			return get_wrapper(ConstantType::make("Int"));
+			return make_wrapper(ConstantType::make("Int"));
 		}
 		default:
 			assert(false);
@@ -56,7 +56,7 @@ Expression* eval_binop_int(Expression* b, Expression* eval_e1, Expression* eval_
 	// UNIFY
 	assert(eval_e1->type->unify(ConstantType::make("Int")));
 	assert(eval_e2->type->unify(ConstantType::make("Int")));
-	return get_wrapper(ConstantType::make("Int"));
+	return make_wrapper(ConstantType::make("Int"));
 }
 
 // Problem: Allows list + list
@@ -89,7 +89,7 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 			return eval_binop_int(b, eval_e1, eval_e2);
 		case CONS:
 		{
-			return get_wrapper(ListType::make(eval_e1->type, eval_e2->type));
+			return make_wrapper(ListType::make(eval_e1->type, eval_e2->type));
 		}
 		default:
 		{
@@ -170,7 +170,6 @@ Expression* TypeInference::eval(Expression* e) {
 
 		case AST_BRANCH:
 		{
-			cout << "branch" << endl;
 			AstBranch* branch = static_cast<AstBranch*>(e);
 			Expression* pred_prime = eval(branch->get_pred());
 
@@ -212,7 +211,7 @@ Expression* TypeInference::eval(Expression* e) {
 			Type* id_var = VariableType::make("v" + typeVarCount);
 			typeVarCount++;
 
-			Expression* type_wrapper = get_wrapper(id_var);
+			Expression* type_wrapper = make_wrapper(id_var);
 
 			// Need to push/pop? (almost def not) (aka sam thinks not)
 			sym_tab.add(formal, type_wrapper);
@@ -261,11 +260,11 @@ Expression* TypeInference::eval(Expression* e) {
 
 			if (expressions.size() > 2) {
 				vector<Expression*> new_expressions = vector<Expression*>(expressions.begin() + 2, expressions.end());
-				new_expressions.insert(new_expressions.begin(), get_wrapper(resultType));
+				new_expressions.insert(new_expressions.begin(), make_wrapper(resultType));
 				AstExpressionList* new_el = AstExpressionList::make(new_expressions);
 				res_exp = eval(new_el);
 			} else {
-				res_exp = get_wrapper(resultType);
+				res_exp = make_wrapper(resultType);
 			}
 			break;
 		}
