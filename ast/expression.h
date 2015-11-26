@@ -16,6 +16,4 @@
 #include "AstUnOp.h"
 #include "AstRead.h"
 
-
-
 #endif /* EXPRESSION_INCLUDES_H_ */

@@ -2,15 +2,14 @@
 #define ASTBRANCH_H_
 #include "Expression.h"
 
-class AstBranch:public Expression {
+class AstBranch: public Expression {
 private:
 	Expression* pred;
 	Expression* then_exp;
 	Expression* else_exp;
 	AstBranch(Expression* pred, Expression* then_exp, Expression* else_exp);
 public:
-	static AstBranch* make(Expression* pred, Expression* then_exp,
-			Expression* else_exp);
+	static AstBranch* make(Expression* pred, Expression* then_exp, Expression* else_exp);
 	virtual string to_string(int d = 0);
 	virtual string to_value();
 	Expression* get_pred();

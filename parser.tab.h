@@ -1,4 +1,3 @@
-
 /* A Bison parser, made by GNU Bison 2.4.1.  */
 
 /* Skeleton interface for Bison's Yacc-like parsers in C
@@ -78,8 +77,6 @@
      EXPR = 294
    };
 #endif
-
-
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef int YYSTYPE;

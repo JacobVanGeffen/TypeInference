@@ -29,6 +29,7 @@ $(TESTS): test% : parser
 
 clean:
 	rm -f l-type-inference  *.o  parser.output
+	rm *.out
 
 depend:
 	makedepend -I. *.c

@@ -1,44 +1,38 @@
- #ifndef AST_UNOP_H_
- #define AST_UNOP_H_
- #include "Expression.h"
- 
- enum unop_type {HD, TL, ISNIL, PRINT};
- 
- class AstUnOp;
+#ifndef AST_UNOP_H_
+#define AST_UNOP_H_
+#include "Expression.h"
 
- class AstUnOp: public Expression
- {
-   private:
-     unop_type bt;
-     Expression* e;
-     AstUnOp(unop_type bt, Expression* e);
-     
-   public:
+enum unop_type {HD, TL, ISNIL, PRINT};
 
-    static AstUnOp* make(unop_type bt, Expression* e);
-    virtual string to_string(int d = 0);
-    virtual string to_value();
-    Expression* get_expression();
-    unop_type get_unop_type();
-    
-    virtual Expression* substitute(Expression* e1,
-        		  Expression* e2);
+class AstUnOp;
 
-    virtual bool operator==(const Expression& other);
+class AstUnOp: public Expression {
+private:
+   unop_type bt;
+   Expression* e;
+   AstUnOp(unop_type bt, Expression* e);
 
-    static string unop_type_to_string(unop_type bt)
-    {
-        switch (bt) {
-          case HD: return "!";
-          case TL: return "#";
-          case ISNIL: return "IsNil";
-          case PRINT: return "print";
-          default:
-            assert(false);
-        }
-    }
-    
- };
- 
- 
- #endif /* AST_UNOP_H_ */
+public:
+   static AstUnOp* make(unop_type bt, Expression* e);
+   virtual string to_string(int d = 0);
+   virtual string to_value();
+   Expression* get_expression();
+   unop_type get_unop_type();
+
+   virtual Expression* substitute(Expression* e1, Expression* e2);
+
+   virtual bool operator==(const Expression& other);
+
+   static string unop_type_to_string(unop_type bt) {
+   	switch (bt) {
+   	  case HD: return "!";
+   	  case TL: return "#";
+   	  case ISNIL: return "IsNil";
+   	  case PRINT: return "print";
+   	  default:
+   		assert(false);
+   	}
+   }
+};
+
+#endif /* AST_UNOP_H_ */

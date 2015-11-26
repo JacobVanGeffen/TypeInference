@@ -1,5 +1,5 @@
- #ifndef LIST_TYPE_H_
- #define LIST_TYPE_H_
+#ifndef LIST_TYPE_H_
+#define LIST_TYPE_H_
 
 #include "Type.h"
 
@@ -8,23 +8,18 @@
 
 using namespace std;
 
+class ListType: public Type {
+private:
+	ListType(Type* head, Type* tail);
+	Type* head;
+	Type* tail;
 
- class ListType: public Type
- {
- private:
-   ListType(Type* head, Type* tail);
-   Type* head;
-   Type* tail;
+public:
+	static ListType* make(Type* head, Type* tail);
+	virtual bool operator<(const Type& other);
+	virtual string to_string();
+	const Type* get_head();
+	const Type* get_tail();
+};
 
- public:
-    static ListType* make(Type* head, Type* tail);
-    virtual bool operator<(const Type& other);
-    virtual string to_string();
-    const Type* get_head();
-    const Type* get_tail();
-
-
- };
-
-
- #endif /* LIST_TYPE_H_ */
+#endif /* LIST_TYPE_H_ */

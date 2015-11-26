@@ -1,5 +1,3 @@
-
-
 #ifndef EVALUATOR_H_
 #define EVALUATOR_H_
 

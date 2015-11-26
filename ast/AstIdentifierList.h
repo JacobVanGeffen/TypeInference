@@ -2,7 +2,7 @@
 #define ASTIDENTIFIERLIST_H_
 #include "AstIdentifier.h"
 
-class AstIdentifierList:public Expression {
+class AstIdentifierList: public Expression {
 private:
 	vector<AstIdentifier*> ids;
 	AstIdentifierList(AstIdentifier* id);

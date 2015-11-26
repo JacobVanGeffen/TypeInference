@@ -4,7 +4,7 @@
 
 class AstExpressionList;
 
-class AstExpressionList:public Expression {
+class AstExpressionList: public Expression {
 private:
 	vector<Expression*> exps;
 	AstExpressionList(Expression* e);
@@ -16,8 +16,7 @@ public:
 	virtual string to_value();
 	const vector<Expression*> & get_expressions();
 	AstExpressionList* append_exp(Expression* e);
-	virtual Expression* substitute(Expression* e1,
-	        		  Expression* e2);
+	virtual Expression* substitute(Expression* e1, Expression* e2);
 	virtual bool operator==(const Expression& other);
 private:
 	void compute_hash();
