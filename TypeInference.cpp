@@ -1,11 +1,11 @@
-//TODO CHECK RETURN VALUE OF ALL UNIFYS
-
 #include "ast/ConstantType.h"
 #include "ast/VariableType.h"
 #include "ast/FunctionType.h"
 #include "ast/ListType.h"
 #include "ast/expression.h"
 #include "TypeInference.h"
+
+//TODO CHECK RETURN VALUE OF ALL UNIFYS
 
 int typeVarCount = 0;
 void report_error(Expression* e, const string & s) {
@@ -98,7 +98,6 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 		}
 	}
 }
-/**/
 
 Expression* TypeInference::eval(Expression* e) {
 	Expression* res_exp = NULL;
@@ -106,7 +105,7 @@ Expression* TypeInference::eval(Expression* e) {
 		case AST_INT:
 		{
 			res_exp = e;
-			if (res_exp->type == nullptr) {
+			if (!res_exp->type) {
 				res_exp->type = ConstantType::make("Int");
 			}
 			break;
@@ -295,5 +294,5 @@ TypeInference::TypeInference(Expression* e) {
     // TODO CODE GOES HERE
 	sym_tab.push();
  	eval(e);
-	cout << "Passed!" << endl;
+	cout << "passed!" << endl;
 }

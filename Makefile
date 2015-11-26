@@ -25,7 +25,7 @@ test: $(TESTS);
 $(TESTS): test% : parser
 	@echo -n "$*.l ... "
 	-@./l-type-inference tests/given/$*.l > $*.out 2>&1
-	-@((grep "passed\!" $*.out) && echo "pass") || echo "failed"
+	-@((grep -q "passed\!" $*.out) && echo "pass") || echo "failed"
 
 clean:
 	rm -f l-type-inference  *.o  parser.output
