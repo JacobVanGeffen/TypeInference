@@ -23,6 +23,8 @@ protected:
 
 public:
 	Type* find();
+	virtual Type* get_hd();
+	virtual Type* get_tl();
 	bool unify(Type* other);
 	type_kind get_kind();
 	virtual bool operator<(const Type& other) = 0;

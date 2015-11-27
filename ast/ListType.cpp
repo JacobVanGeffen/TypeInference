@@ -19,12 +19,12 @@ bool ListType::operator<(const Type& other) {
 	return tail < ct.tail;
 }
 
-const Type* ListType::get_head() {
-	return head;
+Type* ListType::get_hd() {
+	return this->head;
 }
 
-const Type* ListType::get_tail() {
-	return tail;
+Type* ListType::get_tl() {
+	return this->tail;
 }
 
 string ListType::to_string() {

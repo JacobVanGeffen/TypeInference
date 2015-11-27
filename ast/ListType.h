@@ -18,8 +18,8 @@ public:
 	static ListType* make(Type* head, Type* tail);
 	virtual bool operator<(const Type& other);
 	virtual string to_string();
-	const Type* get_head();
-	const Type* get_tail();
+	virtual Type* get_hd();
+	virtual Type* get_tl();
 };
 
 #endif /* LIST_TYPE_H_ */
