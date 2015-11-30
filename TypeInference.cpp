@@ -116,6 +116,7 @@ AstLambda* TypeInference::eval_lambda(AstLambda* lambda, const string id) {
 }
 
 Expression* TypeInference::eval(Expression* e) {
+	cout << "- evaluating " << e->to_value() << endl;
 	Expression* res_exp = NULL;
 	switch (e->get_type()) {
 		case AST_INT:
@@ -296,16 +297,21 @@ Expression* TypeInference::eval(Expression* e) {
 			assert(expression0_eval->type != nullptr);
 			expression0_eval->type->unify(function_eval_type);
 
+			// set res_exp
+			e->type = function_eval_type;
+			res_exp = e;
+
 			break;
 		}
 
+		// pretty sure this never applies cause we don't create lists, we only do cons's
 		case AST_LIST:
 		{
 			assert(false);
 			break;
 		}
 
-		// does this even ever apply I don't get it
+		// pretty sure this never applies
 		case AST_IDENTIFIER_LIST:
 		{
 			assert(false);
@@ -315,6 +321,9 @@ Expression* TypeInference::eval(Expression* e) {
 		default:
 			assert(false);
 	}
+	
+	cout << "+ evaluated to " << res_exp->to_value() << endl;
+
 	return res_exp;
 }
 
