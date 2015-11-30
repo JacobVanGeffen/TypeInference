@@ -9,15 +9,25 @@ map<string, VariableType*> renames;
 
 int var_counter = 1;
 string get_new_variable() {
-	return "v" + (var_counter++);
+	return "v" + to_string(var_counter++);
+}
+
+Expression* make_wrapper(Type* type) {
+	Expression* wrapper = AstInt::make(0);
+	wrapper->type = type;
+	return wrapper;
 }
 
 Expression* TypeInference::eval_unop(AstUnOp* b) {
+	Expression* e = eval(b->get_expression());
 	switch (b->get_unop_type()) {
 		case HD:
+			return make_wrapper(e->type->get_hd());
 		case TL:
+			return make_wrapper(e->type->get_tl());
 		case ISNIL:
 		case PRINT:
+			return make_wrapper(ConstantType::make("Int"));
 		default:
 			assert(false);
 			return AstNil::make();
@@ -27,7 +37,7 @@ Expression* TypeInference::eval_unop(AstUnOp* b) {
 Expression* eval_binop_to_int(Expression* b, Expression* eval_e1, Expression* eval_e2) {
 	// e1 and e2 must have same type
 	assert(eval_e1->type != nullptr); assert(eval_e2->type != nullptr);
-	eval_e1->type->unify(eval_e2->type);
+	assert(eval_e1->type->unify(eval_e2->type));
 	// b's type is an int as implied by the function name
 	b->type = ConstantType::make("Int");
 	return b;
@@ -36,7 +46,7 @@ Expression* eval_binop_to_int(Expression* b, Expression* eval_e1, Expression* ev
 Expression* eval_binop_to_int_or_string(Expression* b, Expression* eval_e1, Expression* eval_e2) {
 	// e1 and e2 must have same type
 	assert(eval_e1->type != nullptr); assert(eval_e2->type != nullptr);
-	eval_e1->type->unify(eval_e2->type);
+	assert(eval_e1->type->unify(eval_e2->type));
 	// b is e1 or e2's type, doesn't really matter since types match
 	b->type = eval_e1->type;
 	return b;
@@ -60,8 +70,8 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 		case GT:
 		case GEQ:
 			assert(eval_e1->type != nullptr);
-			eval_e1->type->unify(ConstantType::make("Int"));
-			eval_e2->type->unify(ConstantType::make("Int"));
+			assert(eval_e1->type->unify(ConstantType::make("Int")));
+			assert(eval_e2->type->unify(ConstantType::make("Int")));
 		// for these two it could be ints or strings or lists
 		case EQ:
 		case NEQ:
@@ -72,7 +82,7 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 			return eval_binop_to_int_or_string(b, eval_e1, eval_e2);
 
 		case CONS:
-			// TODO
+			return make_wrapper(ListType::make(eval_e1->type, eval_e2->type));
 		default:
 			assert(false);
 			return AstNil::make();
@@ -86,6 +96,7 @@ AstLambda* TypeInference::eval_lambda(AstLambda* lambda, const string id) {
 
 	// rename x to generic v*
 	string rename = get_new_variable();
+cout << "rename " << rename << endl;
 	VariableType* rename_var = VariableType::make(rename);
 	renames[formal->get_id()] = rename_var;
 
@@ -108,7 +119,7 @@ AstLambda* TypeInference::eval_lambda(AstLambda* lambda, const string id) {
 	}
 	// unify the result with lambda'
 	assert(body_eval->type != nullptr);
-	lambda_prime->unify(body_eval->type);
+	assert(lambda_prime->unify(body_eval->type));
 
 	// return lambda with it's type
 	lambda->type = lambda_type;
@@ -160,8 +171,11 @@ Expression* TypeInference::eval(Expression* e) {
 			VariableType* id_type;
 			map<string, VariableType*>::iterator rename_ptr = renames.find(id->get_id());
 			if (rename_ptr != renames.end()) { // found it
+cout << "found old thing" << endl;
+cout << rename_ptr->first << " " << rename_ptr->second << endl;
 				id_type = rename_ptr->second;
 			} else {
+cout << "creating new thing" << endl;
 				id_type = VariableType::make(id->get_id());
 			}
 
@@ -190,7 +204,7 @@ Expression* TypeInference::eval(Expression* e) {
 
 			// unify var(id) and type of S1
 			assert(id_eval->type != nullptr); assert(val_eval->type != nullptr);
-			id_eval->type->unify(val_eval->type);
+			assert(id_eval->type->unify(val_eval->type));
 
 			// eval S2 to keep moving forward
 			res_exp = eval(let->get_body());
@@ -208,7 +222,7 @@ Expression* TypeInference::eval(Expression* e) {
 			Expression* pred_eval = eval(pred);
 			// P must be an Int
 			assert(pred_eval->type != nullptr);
-			pred_eval->type->unify(ConstantType::make("Int"));
+			assert(pred_eval->type->unify(ConstantType::make("Int")));
 
 			// eval S1
 			Expression* then_exp = branch->get_then_exp();
@@ -220,7 +234,7 @@ Expression* TypeInference::eval(Expression* e) {
 
 			// S1 and S2 must be same type
 			assert(then_exp_eval->type != nullptr); assert(else_exp_eval->type != nullptr);
-			then_exp_eval->type->unify(else_exp_eval->type);
+			assert(then_exp_eval->type->unify(else_exp_eval->type));
 
 			// can return either S1 or S2, they both have same type (since we sucessfully unified)
 			res_exp = then_exp_eval;
@@ -268,18 +282,6 @@ Expression* TypeInference::eval(Expression* e) {
 			}
 			// case 2: we have an actual application and can proceed as normal
 
-			// put the types of the rest of the expressions into a function type
-			vector<Type*> args;
-			for (auto it = expressions.begin() + 1; it != expressions.end(); ++it) {
-				Expression* expression = *it;
-				Expression* expression_eval = eval(expression);
-				args.push_back(expression_eval->type);
-			}
-			FunctionType* function_type = FunctionType::make(expression0->to_value(), args);
-			// now take that function type and unify it with expression0's type
-			assert(expression0_eval->type != nullptr);
-			expression0_eval->type->unify(function_type);
-
 			// return value is the variable type with appropriate number of primes tacked onto it
 			// if expression0 was an identifier use that as the name, otherwise we don't really care
 			string name;
@@ -292,10 +294,27 @@ Expression* TypeInference::eval(Expression* e) {
 			for (uint32_t i=0; i<expressions.size()-1; i++) {
 				name += "'";
 			}
-
+			// finally it all goes to function'
 			VariableType* function_eval_type = VariableType::make(name);
+
+			// put the types of the rest of the expressions into a function type
+			vector<Type*> args;
+			for (auto it = expressions.begin() + 1; it != expressions.end(); ++it) {
+				Expression* expression = *it;
+				Expression* expression_eval = eval(expression);
+				args.push_back(expression_eval->type);
+			}
+			// finally it all evaluates to function_eval_type
+			args.push_back(function_eval_type);
+			// create function type arg->arg->arg->...->function'
+			FunctionType* function_type = FunctionType::make(expression0->to_value(), args);
+			// now take that function type and unify it with expression0's type
 			assert(expression0_eval->type != nullptr);
-			expression0_eval->type->unify(function_eval_type);
+			assert(expression0_eval->type->unify(function_type));
+
+			// finally the value of the application is function'
+			assert(expression0_eval->type != nullptr);
+			assert(expression0_eval->type->unify(function_eval_type));
 
 			// set res_exp
 			e->type = function_eval_type;
@@ -322,7 +341,7 @@ Expression* TypeInference::eval(Expression* e) {
 			assert(false);
 	}
 	
-	cout << "+ evaluated to " << res_exp->to_value() << endl;
+	cout << "+ evaluated to " << res_exp->to_value() << " with type " << res_exp->type->to_string() << endl;
 
 	return res_exp;
 }

@@ -87,6 +87,7 @@ void Type::compute_union(Type* other) {
 }
 
 bool Type::unify(Type* other) {
+	cout << "unifying myself (" << to_string() << ") with other (" << other->to_string() << ")" << endl;
 	Type* t1 = this->find();
 	Type* t2 = other->find();
 	if(t1 == t2) return true;
