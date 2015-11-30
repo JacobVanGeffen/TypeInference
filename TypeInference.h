@@ -8,13 +8,12 @@ class Expression;
 class TypeInference {
 private:
 	Expression* program;
-	SymbolTable sym_tab;
 public:
 	TypeInference(Expression* p);
 	Expression* eval(Expression* e);
 	Expression* eval_binop(AstBinOp* b);
 	Expression* eval_unop(AstUnOp* b);
-
+	Expression* eval_lambda(Expression* e);
 };
 
 #endif /* TYPE_INFERENCE_H_ */
