@@ -63,12 +63,10 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 	// If head of e is a list, get its head
 	// do we really want to do this?
 	// should [ [Int, Int], String ] be able to be added to Int ?
-	/*
 	while (eval_e1->type->get_kind() == TYPE_LIST)
 		eval_e1->type = eval_e1->type->get_hd();
 	while (eval_e2->type->get_kind() == TYPE_LIST)
 		eval_e2->type = eval_e2->type->get_hd();
-	*/
 
 	// After this point, eval_e1/2 have the types of their heads (or recursive heads, if head is a list)
 
@@ -105,9 +103,12 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 }
 
 Type* compute_msu(Type* t1, Type* t2) {
-	// find representatitives of thet types
+	cout << "MSU-ING " << t1->to_string() << " with " << t2->to_string() << endl;
 	Type* t1_rep = t1->find();
 	Type* t2_rep = t2->find();
+	cout << "reps:    " << t1_rep->to_string() << "  ##  " << t2_rep->to_string() << endl;
+
+	if (t1 == t2) return t1; // or t2 doesn't matter
 
 	// case by case basis over { ConstantType, VariableType, ListType, FunctionType }
 	if (t1_rep->get_kind() == TYPE_VARIABLE || t2_rep->get_kind() == TYPE_VARIABLE) {
@@ -414,8 +415,8 @@ Expression* get_test() {
 
 TypeInference::TypeInference(Expression* e) {
 	/*
-	Expression* ee = get_test();
-	eval(ee);
+	Expression* test = get_test();
+	eval(test);
 	*/
  	Expression* eval_e = eval(e);
 	cout << "final state of unification:" << endl;

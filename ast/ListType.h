@@ -14,6 +14,11 @@ private:
 	Type* head;
 	Type* tail;
 
+protected:
+	virtual ListType* clone() const {
+		return new ListType(*this);
+	}
+
 public:
 	static ListType* make(Type* head, Type* tail);
 	virtual bool operator<(const Type& other);

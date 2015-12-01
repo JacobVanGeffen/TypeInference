@@ -10,13 +10,19 @@
 using namespace std;
 
 class AlphaType: public Type {
-	private:
-	    AlphaType();
+private:
+	AlphaType();
 
-		public:
-		    static AlphaType* make();
-			    virtual bool operator<(const Type& other);
-				    virtual string to_string();
+protected:
+	virtual AlphaType* clone() const {
+		return new AlphaType(*this);
+	}
+
+public:
+	static AlphaType* make();
+	virtual bool operator<(const Type& other);
+	virtual string to_string();
+	virtual Type* get_tl();
 };
 
 #endif /* FUNCTION_TYPE_H_ */

@@ -9,14 +9,19 @@
 using namespace std;
 
 class VariableType: public Type {
-	private:
+private:
     VariableType(const string& name);
 	Type* head = nullptr;
 	Type* tail = nullptr;
 	void make_ht();
     string name;
 
-	public:
+protected:
+	virtual VariableType* clone() const {
+		return new VariableType(*this);
+	}
+
+public:
     static VariableType* make(const string& name);
     virtual bool operator<(const Type& other);
     virtual string to_string();

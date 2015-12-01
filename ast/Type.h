@@ -21,6 +21,8 @@ protected:
 
 	static Type* get_type(Type* t);
 
+	virtual Type* clone() const = 0;
+
 public:
 	Type* find();
 	virtual Type* get_hd();

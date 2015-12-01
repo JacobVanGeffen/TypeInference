@@ -3,6 +3,7 @@
 #include "ConstantType.h"
 #include "ListType.h"
 #include <iostream>
+#include <map>
 using namespace std;
 
 set<Type*, TypeComparator> Type::types;
@@ -138,40 +139,29 @@ bool Type::unify(Type* other) {
 		}
 		return singleton->unify(rest);
 	}
-	if(t1->tk == TYPE_LIST && t2->tk == TYPE_LIST) {
-		t1->compute_union(t2);
-		Type* hd1 = t1->get_hd();
-		Type* tl1 = t1->get_tl();
-		Type* hd2 = t2->get_hd();
-		Type* tl2 = t2->get_tl();
-		return hd1->unify(hd2) && tl1->unify(tl2);
-	}
-	if (t1->tk == TYPE_LIST || t2->tk == TYPE_LIST) { // only one of them is a list, so the other one is ConstantType or a FunctionType
-		if (t2->tk == TYPE_LIST) {
-			auto temp = t2;
-			t2 = t1;
-			t1 = temp;
-		}
-		// t1 is the list type
-		return t1->get_hd()->unify(t2) && t1->get_tl()->unify(ConstantType::make("Nil"));
-	}
 	if(t1->tk == TYPE_VARIABLE || t2->tk == TYPE_VARIABLE) {
 		t1->compute_union(t2);
 		return true;
 	}
 
-
-	return false;
+	t1->compute_union(t2);
+	Type* hd1 = t1->get_hd();
+	Type* tl1 = t1->get_tl();
+	Type* hd2 = t2->get_hd();
+	Type* tl2 = t2->get_tl();
+	return hd1->unify(hd2) && tl1->unify(tl2);
 }
 
 bool Type::verify(Type* other) {
-	set<Type*, TypeComparator> backup;
+	map<Type*, Type*> backup; // map from a type pointer to it's parent
 	for (auto it=types.begin(); it!=types.end(); it++) {
 		Type* t = *it;
-		Type* t_cp = new Type(t);
-		backup.insert(t_cp);
+		backup[t] = t->parent;
 	}
 	bool res = unify(other);
-	types = backup;
+	for (auto it=types.begin(); it!=types.end(); it++) {
+		Type* t = *it;
+		t->parent = backup[t];
+	}
 	return res;
 }

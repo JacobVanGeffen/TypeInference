@@ -13,6 +13,11 @@ private:
 	ConstantType(const string& name);
 	string name;
 
+protected:
+	virtual ConstantType* clone() const {
+		return new ConstantType(*this);
+	}
+
 public:
 	static ConstantType* make(const string& name);
 	virtual bool operator<(const Type& other);

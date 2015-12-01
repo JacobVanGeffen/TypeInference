@@ -15,6 +15,11 @@ private:
 	string name;
 	vector<Type*> args;
 
+protected:
+	virtual FunctionType* clone() const {
+		return new FunctionType(*this);
+	}
+
 public:
 	static FunctionType* make(const string& name, const vector<Type*> & args);
 	virtual bool operator<(const Type& other);
