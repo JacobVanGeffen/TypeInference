@@ -87,7 +87,7 @@ void Type::compute_union(Type* other) {
 }
 
 bool Type::unify(Type* other) {
-	cout << "unifying myself (" << to_string() << ") with other (" << other->to_string() << ")" << endl;
+	cout << "unifying " << to_string() << " with " << other->to_string() << endl;
 	Type* t1 = this->find();
 	Type* t2 = other->find();
 	if(t1 == t2) return true;
@@ -96,7 +96,7 @@ bool Type::unify(Type* other) {
 		t1->compute_union(t2);
 		FunctionType* f1 = static_cast<FunctionType*>(t1);
 		FunctionType* f2 = static_cast<FunctionType*>(t2);
-		if(f1->get_name() != f2->get_name()) return false; // TODO why tf is this here??
+		//if(f1->get_name() != f2->get_name()) return false; // TODO why tf is this here??
 		const vector<Type*> & arg1 = f1->get_args();
 		const vector<Type*> & arg2 = f2->get_args();
 		if(arg1.size() != arg2.size()) return false;

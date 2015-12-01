@@ -1,3 +1,4 @@
+// TODO unify head tail and cons
 #include "ast/ConstantType.h"
 #include "ast/VariableType.h"
 #include "ast/FunctionType.h"
@@ -12,22 +13,19 @@ string get_new_variable() {
 	return "v" + to_string(var_counter++);
 }
 
-Expression* make_wrapper(Type* type) {
-	Expression* wrapper = AstInt::make(0);
-	wrapper->type = type;
-	return wrapper;
-}
-
 Expression* TypeInference::eval_unop(AstUnOp* b) {
 	Expression* e = eval(b->get_expression());
 	switch (b->get_unop_type()) {
 		case HD:
-			return make_wrapper(e->type->get_hd());
+			b->type = e->type->get_hd();
+			return b;
 		case TL:
-			return make_wrapper(e->type->get_tl());
+			b->type = e->type->get_tl();
+			return b;
 		case ISNIL:
 		case PRINT:
-			return make_wrapper(ConstantType::make("Int"));
+			b->type = ConstantType::make("Int");
+			return b;
 		default:
 			assert(false);
 			return AstNil::make();
@@ -82,7 +80,8 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 			return eval_binop_to_int_or_string(b, eval_e1, eval_e2);
 
 		case CONS:
-			return make_wrapper(ListType::make(eval_e1->type, eval_e2->type));
+			b->type = ListType::make(eval_e1->type, eval_e2->type);
+			return b;
 		default:
 			assert(false);
 			return AstNil::make();
@@ -96,7 +95,6 @@ AstLambda* TypeInference::eval_lambda(AstLambda* lambda, const string id) {
 
 	// rename x to generic v*
 	string rename = get_new_variable();
-cout << "rename " << rename << endl;
 	VariableType* rename_var = VariableType::make(rename);
 	renames[formal->get_id()] = rename_var;
 
@@ -108,7 +106,7 @@ cout << "rename " << rename << endl;
 	vector<Type*> args;
 	args.push_back(rename_var);
 	args.push_back(lambda_prime);
-	FunctionType* lambda_type = FunctionType::make(lambda->to_value(), args);
+	FunctionType* lambda_type = FunctionType::make(id, args);
 
 	// evaluate body, as a lambda with name lambda' if needed
 	Expression* body_eval;
@@ -171,11 +169,8 @@ Expression* TypeInference::eval(Expression* e) {
 			VariableType* id_type;
 			map<string, VariableType*>::iterator rename_ptr = renames.find(id->get_id());
 			if (rename_ptr != renames.end()) { // found it
-cout << "found old thing" << endl;
-cout << rename_ptr->first << " " << rename_ptr->second << endl;
 				id_type = rename_ptr->second;
 			} else {
-cout << "creating new thing" << endl;
 				id_type = VariableType::make(id->get_id());
 			}
 
@@ -313,10 +308,6 @@ cout << "creating new thing" << endl;
 			assert(expression0_eval->type->unify(function_type));
 
 			// finally the value of the application is function'
-			assert(expression0_eval->type != nullptr);
-			assert(expression0_eval->type->unify(function_eval_type));
-
-			// set res_exp
 			e->type = function_eval_type;
 			res_exp = e;
 
