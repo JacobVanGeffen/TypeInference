@@ -87,28 +87,26 @@ void Type::compute_union(Type* other) {
 	t2->set_parent(t1);
 }
 
-Type* Type::unify_(Type* other, bool side_effects) {
-	if (side_effects) cout << "UNIFYING  ";
-	else cout << "VERIFYING ";
-	cout << to_string() << " with " << other->to_string() << endl;
+bool Type::unify(Type* other) {
+	cout << "UNIFYING " << to_string() << " with " << other->to_string() << endl;
 	Type* t1 = this->find();
 	Type* t2 = other->find();
-	cout << "reps:     " << t1->to_string() << "  ##  " << t2->to_string() << endl;
-	if(t1 == t2) return this; // or other - same thing
+	cout << "reps:    " << t1->to_string() << "  ##  " << t2->to_string() << endl;
+	if(t1 == t2) return true;
 
 	if (t1->tk == TYPE_ALPHA) {
-		if (t2->tk != TYPE_VARIABLE) return nullptr;
-		if (side_effects) t1->compute_union(t2);
-		return t1; // alpha is predominant
+		if (t2->tk != TYPE_VARIABLE) return false;
+		t1->compute_union(t2);
+		return true;
 	}
 	if (t2->tk == TYPE_ALPHA) {
-		if (t1->tk != TYPE_VARIABLE) return nullptr;
-		if (side_effects) t2->compute_union(t1);
-		return t2; // alpha is predominant
+		if (t1->tk != TYPE_VARIABLE) return false;
+		t2->compute_union(t1);
+		return true;
 	}
 
 	if(t1->tk == TYPE_FUNCTION && t2->tk == TYPE_FUNCTION) {
-		if (side_effects) t1->compute_union(t2);
+		t1->compute_union(t2);
 		FunctionType* f1 = static_cast<FunctionType*>(t1);
 		FunctionType* f2 = static_cast<FunctionType*>(t2);
 		const vector<Type*> & arg1 = f1->get_args();
@@ -116,7 +114,7 @@ Type* Type::unify_(Type* other, bool side_effects) {
 		size_t size = min(arg1.size(), arg2.size()) - 1;
 		size_t i = 0;
 		for(; i < size; ++i) {
-			if(arg1[i]->unify_(arg2[i], side_effects) == false) return nullptr;
+			if(arg1[i]->unify(arg2[i]) == false) return false;
 		}
 		vector<Type*> max;
 		vector<Type*> min;
@@ -138,36 +136,42 @@ Type* Type::unify_(Type* other, bool side_effects) {
 		} else {
 			rest = FunctionType::make("rest", args);
 		}
-		return singleton->unify_(rest, side_effects);
+		return singleton->unify(rest);
 	}
 	if(t1->tk == TYPE_LIST && t2->tk == TYPE_LIST) {
-		if (side_effects) t1->compute_union(t2);
+		t1->compute_union(t2);
 		Type* hd1 = t1->get_hd();
 		Type* tl1 = t1->get_tl();
 		Type* hd2 = t2->get_hd();
 		Type* tl2 = t2->get_tl();
-		Type* unify_head = hd1->unify_(hd2, side_effects);
-		Type* unify_tail = tl1->unify_(tl2, side_effects);
-		return ListType::make(unify_head, unify_tail);
+		return hd1->unify(hd2) && tl1->unify(tl2);
+	}
+	if (t1->tk == TYPE_LIST || t2->tk == TYPE_LIST) { // only one of them is a list, so the other one is ConstantType or a FunctionType
+		if (t2->tk == TYPE_LIST) {
+			auto temp = t2;
+			t2 = t1;
+			t1 = temp;
+		}
+		// t1 is the list type
+		return t1->get_hd()->unify(t2) && t1->get_tl()->unify(ConstantType::make("Nil"));
 	}
 	if(t1->tk == TYPE_VARIABLE || t2->tk == TYPE_VARIABLE) {
-		if (side_effects) t1->compute_union(t2);
-		// return the most important (non variable type) type
-		if (t1->tk == TYPE_VARIABLE) {
-			return t2->find();
-		} else if (t2->tk == TYPE_VARIABLE) {
-			return t1->find();
-		}
+		t1->compute_union(t2);
+		return true;
 	}
 
-	return nullptr;
+
+	return false;
 }
 
-bool Type::unify(Type* other) {
-	Type* unify_result = unify_(other, true);
-	return unify_result != nullptr;
-}
-
-Type* Type::verify(Type* other) {
-	return unify_(other, false);
+bool Type::verify(Type* other) {
+	set<Type*, TypeComparator> backup;
+	for (auto it=types.begin(); it!=types.end(); it++) {
+		Type* t = *it;
+		Type* t_cp = new Type(t);
+		backup.insert(t_cp);
+	}
+	bool res = unify(other);
+	types = backup;
+	return res;
 }

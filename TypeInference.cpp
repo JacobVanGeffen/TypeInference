@@ -56,18 +56,21 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 	Expression* eval_e1 = eval(e1);
 	Expression* eval_e2 = eval(e2);
 
+	// Only look at type of head (VariableType-h if e is VariableType)
+	eval_e1->type = eval_e1->type->get_hd();
+	eval_e2->type = eval_e2->type->get_hd();
 
-	    // Only look at type of head (produces new VariableType of e is variable)
-		    eval_e1->type = eval_e1->type->get_hd();
-		    eval_e2->type = eval_e2->type->get_hd();
+	// If head of e is a list, get its head
+	// do we really want to do this?
+	// should [ [Int, Int], String ] be able to be added to Int ?
+	/*
+	while (eval_e1->type->get_kind() == TYPE_LIST)
+		eval_e1->type = eval_e1->type->get_hd();
+	while (eval_e2->type->get_kind() == TYPE_LIST)
+		eval_e2->type = eval_e2->type->get_hd();
+	*/
 
-	    // If head of e is a list, get its head
-	    while (eval_e1->type->get_kind() == TYPE_LIST)
-	        eval_e1->type = eval_e1->type->get_hd();
-	    while (eval_e2->type->get_kind() == TYPE_LIST)
-	        eval_e2->type = eval_e2->type->get_hd();
-
-		// After this point, eval_e1/2 have the types of their heads (or recursive heads, if head is a list)
+	// After this point, eval_e1/2 have the types of their heads (or recursive heads, if head is a list)
 
 	switch (b->get_binop_type()) {
 		// for these cases e1 and e2 must be ints
@@ -353,7 +356,6 @@ Expression* TypeInference::eval(Expression* e) {
 			// finally it all goes to function'''...
 			VariableType* function_eval_type = VariableType::make(name);
 
-			/*
 			// put the types of the rest of the expressions into a function type
 			vector<Type*> args;
 			for (auto it = expressions.begin() + 1; it != expressions.end(); ++it) {
@@ -367,30 +369,7 @@ Expression* TypeInference::eval(Expression* e) {
 			FunctionType* function_type = FunctionType::make(expression0->to_value(), args);
 			// now take that function type and unify it with expression0's type
 			assert(expression0_eval->type != nullptr);
-			Type* verified_function_type = expression0_eval->type->verify(function_type);
-			*/
-
-
-			// the function type to verify every expression against
-			FunctionType* fun = static_cast<FunctionType*>(static_cast<AstLambda*>(expression0_eval)->type);
-			// for every expression being applies
-			for (auto it = expressions.begin() + 1; it != expressions.end(); ++it) {
-				Expression* expression = *it;
-				// first evaluate it (call by value)
-				Expression* expression_eval = eval(expression);
-				// create a function type of (expression_eval_type -> don't care) which will be verified with fun
-				vector<Type*> args;
-				args.push_back(expression_eval->type);
-				args.push_back(VariableType::make(get_new_variable()));
-				FunctionType* expression_fun = FunctionType::make("expfun", args);
-				// now verify that function's first type is the same as expfun's first type aka that function accepts the expression
-				Type* new_fun = fun->verify(expression_fun);
-				assert(fun != nullptr);
-				// new_fun is what fun is thought to be after having expression evaluated on it (aka a more typed fun')
-				assert(new_fun->get_kind() == TYPE_FUNCTION);
-				fun = static_cast<FunctionType*>(new_fun);
-			}
-
+			assert(expression0_eval->type->verify(function_type));
 
 			// finally the value of the application is function'''...
 			e->type = function_eval_type;
@@ -434,13 +413,13 @@ Expression* get_test() {
 }
 
 TypeInference::TypeInference(Expression* e) {
+	/*
 	Expression* ee = get_test();
 	eval(ee);
-	/*
+	*/
  	Expression* eval_e = eval(e);
 	cout << "final state of unification:" << endl;
 	Type::print_all_types();
 	cout << "passed!" << endl;
 	cout << "final type rep: " << eval_e->type->find()->to_string() << endl;
-	*/
 }

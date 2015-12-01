@@ -11,8 +11,8 @@ using namespace std;
 class VariableType: public Type {
 	private:
     VariableType(const string& name);
-	Type* head;
-	Type* tail;
+	Type* head = nullptr;
+	Type* tail = nullptr;
 	void make_ht();
     string name;
 
