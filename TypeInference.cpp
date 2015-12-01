@@ -56,6 +56,19 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 	Expression* eval_e1 = eval(e1);
 	Expression* eval_e2 = eval(e2);
 
+
+	    // Only look at type of head (produces new VariableType of e is variable)
+		    eval_e1->type = eval_e1->type->get_hd();
+		    eval_e2->type = eval_e2->type->get_hd();
+
+	    // If head of e is a list, get its head
+	    while (eval_e1->type->get_kind() == TYPE_LIST)
+	        eval_e1->type = eval_e1->type->get_hd();
+	    while (eval_e2->type->get_kind() == TYPE_LIST)
+	        eval_e2->type = eval_e2->type->get_hd();
+
+		// After this point, eval_e1/2 have the types of their heads (or recursive heads, if head is a list)
+
 	switch (b->get_binop_type()) {
 		// for these cases e1 and e2 must be ints
 		case MINUS:
