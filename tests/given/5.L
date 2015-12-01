@@ -1,6 +1,6 @@
 fun read_list with n =
-	if n = 0 then Nil else
 	let val = readInt in
+	if n = 0 then Nil else
 	let rest = (read_list (n-1)) in
 	val@rest
 in

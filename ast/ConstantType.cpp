@@ -20,3 +20,7 @@ bool ConstantType::operator<(const Type& other) {
 string ConstantType::to_string() {
 	return "ConstantType(" + name + ")";
 }
+
+string ConstantType::get_name() {
+	return name;
+}

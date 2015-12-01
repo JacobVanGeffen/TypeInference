@@ -1,6 +1,7 @@
 #include "Type.h"
 #include "FunctionType.h"
 #include "ConstantType.h"
+#include "ListType.h"
 #include <iostream>
 using namespace std;
 
@@ -86,37 +87,87 @@ void Type::compute_union(Type* other) {
 	t2->set_parent(t1);
 }
 
-bool Type::unify(Type* other) {
-	cout << "unifying " << to_string() << " with " << other->to_string() << endl;
+Type* Type::unify_(Type* other, bool side_effects) {
+	if (side_effects) cout << "UNIFYING  ";
+	else cout << "VERIFYING ";
+	cout << to_string() << " with " << other->to_string() << endl;
 	Type* t1 = this->find();
 	Type* t2 = other->find();
-	if(t1 == t2) return true;
+	cout << "reps:     " << t1->to_string() << "  ##  " << t2->to_string() << endl;
+	if(t1 == t2) return this; // or other - same thing
+
+	if (t1->tk == TYPE_ALPHA) {
+		if (t2->tk != TYPE_VARIABLE) return nullptr;
+		if (side_effects) t1->compute_union(t2);
+		return t1; // alpha is predominant
+	}
+	if (t2->tk == TYPE_ALPHA) {
+		if (t1->tk != TYPE_VARIABLE) return nullptr;
+		if (side_effects) t2->compute_union(t1);
+		return t2; // alpha is predominant
+	}
 
 	if(t1->tk == TYPE_FUNCTION && t2->tk == TYPE_FUNCTION) {
-		t1->compute_union(t2);
+		if (side_effects) t1->compute_union(t2);
 		FunctionType* f1 = static_cast<FunctionType*>(t1);
 		FunctionType* f2 = static_cast<FunctionType*>(t2);
-		//if(f1->get_name() != f2->get_name()) return false; // TODO why tf is this here??
 		const vector<Type*> & arg1 = f1->get_args();
 		const vector<Type*> & arg2 = f2->get_args();
-		if(arg1.size() != arg2.size()) return false;
-		for(unsigned int i = 0; i < arg1.size(); i++) {
-			if(arg1[i]->unify(arg2[i]) == false) return false;
+		size_t size = min(arg1.size(), arg2.size()) - 1;
+		size_t i = 0;
+		for(; i < size; ++i) {
+			if(arg1[i]->unify_(arg2[i], side_effects) == false) return nullptr;
 		}
-		return true;
+		vector<Type*> max;
+		vector<Type*> min;
+		if (arg1.size() >= arg2.size()) {
+			max = (vector<Type*>)arg1;
+			min = (vector<Type*>)arg2;
+		} else {
+			max = (vector<Type*>)arg2;
+			min = (vector<Type*>)arg1;
+		}
+		vector<Type*> args;
+		Type* singleton = min[i];
+		for (;i<max.size();++i) {
+			args.push_back(max[i]);
+		}
+		Type* rest;
+		if (args.size() == 1) {
+			rest = args[0];
+		} else {
+			rest = FunctionType::make("rest", args);
+		}
+		return singleton->unify_(rest, side_effects);
 	}
 	if(t1->tk == TYPE_LIST && t2->tk == TYPE_LIST) {
-		t1->compute_union(t2);
+		if (side_effects) t1->compute_union(t2);
 		Type* hd1 = t1->get_hd();
 		Type* tl1 = t1->get_tl();
 		Type* hd2 = t2->get_hd();
 		Type* tl2 = t2->get_tl();
-		return hd1->unify(hd2) && tl1->unify(tl2);
+		Type* unify_head = hd1->unify_(hd2, side_effects);
+		Type* unify_tail = tl1->unify_(tl2, side_effects);
+		return ListType::make(unify_head, unify_tail);
 	}
 	if(t1->tk == TYPE_VARIABLE || t2->tk == TYPE_VARIABLE) {
-		t1->compute_union(t2);
-		return true;
+		if (side_effects) t1->compute_union(t2);
+		// return the most important (non variable type) type
+		if (t1->tk == TYPE_VARIABLE) {
+			return t2->find();
+		} else if (t2->tk == TYPE_VARIABLE) {
+			return t1->find();
+		}
 	}
 
-	return false;
+	return nullptr;
+}
+
+bool Type::unify(Type* other) {
+	Type* unify_result = unify_(other, true);
+	return unify_result != nullptr;
+}
+
+Type* Type::verify(Type* other) {
+	return unify_(other, false);
 }

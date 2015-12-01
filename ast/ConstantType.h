@@ -17,6 +17,7 @@ public:
 	static ConstantType* make(const string& name);
 	virtual bool operator<(const Type& other);
 	virtual string to_string();
+	string get_name();
 };
 
 #endif /* CONSTANT_TYPE_H_ */

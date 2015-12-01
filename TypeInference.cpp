@@ -1,8 +1,8 @@
-// TODO unify head tail and cons
 #include "ast/ConstantType.h"
 #include "ast/VariableType.h"
 #include "ast/FunctionType.h"
 #include "ast/ListType.h"
+#include "ast/AlphaType.h"
 #include "ast/expression.h"
 #include "TypeInference.h"
 
@@ -88,6 +88,55 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 	}
 }
 
+Type* compute_msu(Type* t1, Type* t2) {
+	// find representatitives of thet types
+	Type* t1_rep = t1->find();
+	Type* t2_rep = t2->find();
+
+	// case by case basis over { ConstantType, VariableType, ListType, FunctionType }
+	if (t1_rep->get_kind() == TYPE_VARIABLE || t2_rep->get_kind() == TYPE_VARIABLE) {
+		return AlphaType::make();
+	} else if (t1_rep->get_kind() == TYPE_ALPHA || t2_rep->get_kind() == TYPE_ALPHA) {
+		return AlphaType::make();
+	} else if (t1_rep->get_kind() == TYPE_CONSTANT && t2_rep->get_kind() == TYPE_CONSTANT) {
+		ConstantType* t1_const = static_cast<ConstantType*>(t1_rep);
+		ConstantType* t2_const = static_cast<ConstantType*>(t2_rep);
+		if (t1_const->get_name() == t2_const->get_name()) {
+			return t1_const; // or t2_const doesn't matter
+		} else {
+			return AlphaType::make();
+		}
+	} else if (t1_rep->get_kind() == TYPE_FUNCTION && t2_rep->get_kind() == TYPE_FUNCTION) {
+		// look through all the args of each function until they don't match, turn that into an alpha type
+		FunctionType* t1_fun = static_cast<FunctionType*>(t1_rep);
+		FunctionType* t2_fun = static_cast<FunctionType*>(t2_rep);
+
+		vector<Type*> t1_args = t1_fun->get_args();
+		vector<Type*> t2_args = t2_fun->get_args();
+
+		size_t size = min(t1_args.size(), t2_args.size());
+		vector<Type*> msu_args;
+		for (size_t i=0; i<size; ++i) {
+			Type* msu = compute_msu(t1_args[i], t2_args[i]);
+			msu_args.push_back(msu);
+		}
+
+		// if lists aren't the same size then the last type actually needs to be an alpha
+		if (t1_args.size() != t2_args.size()) {
+			msu_args.back() = AlphaType::make();
+		}
+
+		string name = "msu(" + t1_fun->get_name() + ", " + t2_fun->get_name() + ")";
+		return FunctionType::make(name, msu_args);
+	}
+
+	// Types are both lists
+	Type* head = compute_msu(t1_rep->get_hd(), t2_rep->get_hd());
+	Type* tail = compute_msu(t1_rep->get_tl(), t2_rep->get_tl());
+	return ListType::make(head, tail);
+}
+
+
 AstLambda* TypeInference::eval_lambda(AstLambda* lambda, const string id) {
 	// lambda x. S1
 	AstIdentifier* formal = lambda->get_formal();
@@ -153,11 +202,11 @@ Expression* TypeInference::eval(Expression* e) {
 		{
 			AstRead* r = static_cast<AstRead*>(e);
 			if (r->read_integer()) {
-				res_exp = AstInt::make(1);
-				res_exp->type = ConstantType::make("Int");
+				e->type = ConstantType::make("Int");
+				res_exp = e;
 			} else {
-				res_exp = AstString::make("input");
-				res_exp->type = ConstantType::make("String");
+				e->type = ConstantType::make("String");
+				res_exp = e;
 			}
 			break;
 		}
@@ -227,12 +276,11 @@ Expression* TypeInference::eval(Expression* e) {
 			Expression* else_exp = branch->get_else_exp();
 			Expression* else_exp_eval = eval(else_exp);
 
-			// S1 and S2 must be same type
+			// return MSU (most specific union) of S1 and S2
 			assert(then_exp_eval->type != nullptr); assert(else_exp_eval->type != nullptr);
-			assert(then_exp_eval->type->unify(else_exp_eval->type));
-
-			// can return either S1 or S2, they both have same type (since we sucessfully unified)
-			res_exp = then_exp_eval;
+			Type* msu = compute_msu(then_exp_eval->type, else_exp_eval->type);
+			e->type = msu;
+			res_exp = e;
 
 			break;
 		}
@@ -285,13 +333,14 @@ Expression* TypeInference::eval(Expression* e) {
 			} else {
 				name = get_new_variable();
 			}
-			// tack size of vector - 1 primes onto it (-1 to not include the function itself)
+			// tack size of (vector - 1) 's onto it (-1 to not include the function itself)
 			for (uint32_t i=0; i<expressions.size()-1; i++) {
 				name += "'";
 			}
-			// finally it all goes to function'
+			// finally it all goes to function'''...
 			VariableType* function_eval_type = VariableType::make(name);
 
+			/*
 			// put the types of the rest of the expressions into a function type
 			vector<Type*> args;
 			for (auto it = expressions.begin() + 1; it != expressions.end(); ++it) {
@@ -305,9 +354,32 @@ Expression* TypeInference::eval(Expression* e) {
 			FunctionType* function_type = FunctionType::make(expression0->to_value(), args);
 			// now take that function type and unify it with expression0's type
 			assert(expression0_eval->type != nullptr);
-			assert(expression0_eval->type->unify(function_type));
+			Type* verified_function_type = expression0_eval->type->verify(function_type);
+			*/
 
-			// finally the value of the application is function'
+
+			// the function type to verify every expression against
+			FunctionType* fun = static_cast<FunctionType*>(static_cast<AstLambda*>(expression0_eval)->type);
+			// for every expression being applies
+			for (auto it = expressions.begin() + 1; it != expressions.end(); ++it) {
+				Expression* expression = *it;
+				// first evaluate it (call by value)
+				Expression* expression_eval = eval(expression);
+				// create a function type of (expression_eval_type -> don't care) which will be verified with fun
+				vector<Type*> args;
+				args.push_back(expression_eval->type);
+				args.push_back(VariableType::make(get_new_variable()));
+				FunctionType* expression_fun = FunctionType::make("expfun", args);
+				// now verify that function's first type is the same as expfun's first type aka that function accepts the expression
+				Type* new_fun = fun->verify(expression_fun);
+				assert(fun != nullptr);
+				// new_fun is what fun is thought to be after having expression evaluated on it (aka a more typed fun')
+				assert(new_fun->get_kind() == TYPE_FUNCTION);
+				fun = static_cast<FunctionType*>(new_fun);
+			}
+
+
+			// finally the value of the application is function'''...
 			e->type = function_eval_type;
 			res_exp = e;
 
@@ -337,8 +409,25 @@ Expression* TypeInference::eval(Expression* e) {
 	return res_exp;
 }
 
+Expression* get_test() {
+	AstBranch* b = AstBranch::make(AstInt::make(1), AstInt::make(2), AstString::make("duck"));
+	AstLambda* l = AstLambda::make(AstIdentifier::make("x"), b);
+	vector<Expression*> exps;
+	exps.push_back(AstIdentifier::make("a"));
+	exps.push_back(AstInt::make(1));
+	AstExpressionList* apply = AstExpressionList::make(exps);
+	AstLet* ll = AstLet::make(AstIdentifier::make("a"), l, apply);
+	return ll;
+}
 
 TypeInference::TypeInference(Expression* e) {
- 	eval(e);
+	Expression* ee = get_test();
+	eval(ee);
+	/*
+ 	Expression* eval_e = eval(e);
+	cout << "final state of unification:" << endl;
+	Type::print_all_types();
 	cout << "passed!" << endl;
+	cout << "final type rep: " << eval_e->type->find()->to_string() << endl;
+	*/
 }

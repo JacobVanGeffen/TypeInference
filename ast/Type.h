@@ -7,7 +7,7 @@ class Type;
 class TypeComparator;
 
 using namespace std;
-enum type_kind {TYPE_CONSTANT, TYPE_FUNCTION, TYPE_VARIABLE, TYPE_LIST};
+enum type_kind {TYPE_CONSTANT, TYPE_FUNCTION, TYPE_VARIABLE, TYPE_LIST, TYPE_ALPHA};
 
 class Type {
 private:
@@ -18,6 +18,7 @@ protected:
 	Type(type_kind tk);
 	void set_parent(Type* t);
 	void compute_union(Type* other);
+	Type* unify_(Type* other, bool side_effects);
 
 	static Type* get_type(Type* t);
 
@@ -26,6 +27,7 @@ public:
 	virtual Type* get_hd();
 	virtual Type* get_tl();
 	bool unify(Type* other);
+	Type* verify(Type* other);
 	type_kind get_kind();
 	virtual bool operator<(const Type& other) = 0;
 	virtual string to_string() = 0;

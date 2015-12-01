@@ -1,7 +1,6 @@
 #ifndef TYPE_INFERENCE_H_
 #define TYPE_INFERENCE_H_
 
-#include "VariableType.h"
 #include "SymbolTable.h"
 
 class Expression;
