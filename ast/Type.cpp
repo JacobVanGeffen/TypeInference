@@ -1,9 +1,12 @@
 #include "Type.h"
 #include "FunctionType.h"
 #include "ConstantType.h"
+#include "VariableType.h"
 #include "ListType.h"
 #include <iostream>
 #include <map>
+#include <string>
+#include <assert.h>
 using namespace std;
 
 set<Type*, TypeComparator> Type::types;
@@ -12,7 +15,11 @@ Type* nil_type = ConstantType::make("Nil"); // Do we need to make this static/co
 void Type::print_all_types() {
 	cout << "************* All current types ********************" << endl;
 	for(auto it = types.begin(); it != types.end(); it++) {
-		cout << (*it)->to_string() << " Representative: " <<  (*it)->find()->to_string() << endl;
+		cout << "Type: ";
+		cout << (*it)->to_string();
+		cout << " Representative: ";
+		cout <<  (*it)->find()->to_string() << endl;
+		cout << "hi" << endl;
 	}
 	cout << "****************************************************" << endl;
 }
@@ -61,6 +68,14 @@ Type* Type::find() {
 void Type::compute_union(Type* other) {
 	Type* t1 = this->find();
 	Type* t2 = other->find();
+	if(t1->tk == TYPE_ALPHA) {
+		t2->set_parent(t1);
+		return;
+	}
+	if(t2->tk == TYPE_ALPHA) {
+		t1->set_parent(t2);
+		return;
+	}
 	if(t1->tk == TYPE_CONSTANT) {
 		t2->set_parent(t1);
 		return;
@@ -85,7 +100,16 @@ void Type::compute_union(Type* other) {
 		t1->set_parent(t2);
 		return;
 	}
-	t2->set_parent(t1);
+	if(t1->tk == TYPE_VARIABLE && t2->tk == TYPE_VARIABLE) {
+		VariableType* vt1 = static_cast<VariableType*>(t1);
+		VariableType* vt2 = static_cast<VariableType*>(t2);
+		if (vt1->get_name().length() < vt2->get_name().length()) t1->set_parent(t2);
+		else t2->set_parent(t1);
+		return;
+	}
+	// All the cases are caught
+	assert(false);
+	// t2->set_parent(t1);
 }
 
 bool Type::unify(Type* other) {

@@ -23,6 +23,7 @@ protected:
 
 public:
     static VariableType* make(const string& name);
+	string get_name();
     virtual bool operator<(const Type& other);
     virtual string to_string();
     virtual Type* get_hd();

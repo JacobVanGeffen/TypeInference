@@ -108,7 +108,7 @@ Type* compute_msu(Type* t1, Type* t2) {
 	Type* t2_rep = t2->find();
 	cout << "reps:    " << t1_rep->to_string() << "  ##  " << t2_rep->to_string() << endl;
 
-	if (t1 == t2) return t1; // or t2 doesn't matter
+//	if (t1 == t2) return t1; // or t2 doesn't matter
 
 	// case by case basis over { ConstantType, VariableType, ListType, FunctionType }
 	if (t1_rep->get_kind() == TYPE_VARIABLE || t2_rep->get_kind() == TYPE_VARIABLE) {
@@ -420,6 +420,7 @@ TypeInference::TypeInference(Expression* e) {
 	*/
  	Expression* eval_e = eval(e);
 	cout << "final state of unification:" << endl;
+	cout << "passed!" << endl;
 	Type::print_all_types();
 	cout << "passed!" << endl;
 	cout << "final type rep: " << eval_e->type->find()->to_string() << endl;

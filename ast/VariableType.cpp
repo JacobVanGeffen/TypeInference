@@ -22,18 +22,16 @@ string VariableType::to_string() {
 	return "VariableType(" + name + ")";
 }
 
+string VariableType::get_name() {
+	return name;
+}
+
 Type* VariableType::get_hd() {
-	if (head == nullptr) make_ht();
+	if (head == nullptr) head = make(name + "-h");
 	return head;
 }
 
 Type* VariableType::get_tl() {
-	if (tail == nullptr) make_ht();
+	if (tail == nullptr) tail = make(name + "-t");
 	return tail;
-}
-
-void VariableType::make_ht() {
-	head = make(name + "-h");
-	tail = make(name + "-t");
-	unify(ListType::make(head, tail));
 }
