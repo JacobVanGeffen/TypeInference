@@ -134,6 +134,9 @@ bool Type::unify_(Type* other, bool shallow) {
 		return true;
 	}
 
+	if (t1->tk == TYPE_CONSTANT && t2->tk == TYPE_CONSTANT) {
+		return t1 == t2;
+	}
 	if(t1->tk == TYPE_FUNCTION && t2->tk == TYPE_FUNCTION) {
 		t1->compute_union(t2);
 		FunctionType* f1 = static_cast<FunctionType*>(t1);
@@ -191,14 +194,31 @@ Type* Type::verify(Type* other, Type* result_find) {
 	}
 
 	bool unify_res = unify_(other, true);
+	if (!unify_res) return nullptr;
 	Type* result = nullptr;
-	if(unify_res) result = result_find->find();
+	result = result_find->find();
+	// recursively get representatives
+	if (result->tk == TYPE_FUNCTION) {
+		FunctionType* ft = static_cast<FunctionType*>(result);
+		vector<Type*> args = ft->get_args();
+		vector<Type*> arg_reps;
+		for (auto it=args.begin(); it!=args.end(); it++) {
+			arg_reps.push_back((*it)->find());
+		}
+		result = FunctionType::make(ft->get_name(), arg_reps);
+	}
+	if (result->tk == TYPE_LIST) {
+		ListType* lt = static_cast<ListType*>(result);
+		result = ListType::make(lt->get_hd()->find(), lt->get_tl()->find());
+	}
 	cout << "Result ";
 	cout << result->to_string() << endl;
 
 	for (auto it=types.begin(); it!=types.end(); it++) {
 		Type* t = *it;
-		t->parent = backup[t];
+		if (backup[t] != nullptr) {
+			t->parent = backup[t];
+		}
 	}
 	return result;
 }
