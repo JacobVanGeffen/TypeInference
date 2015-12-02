@@ -32,21 +32,21 @@ Expression* TypeInference::eval_unop(AstUnOp* b) {
 	}
 }
 
-Expression* eval_binop_to_int(Expression* b, Expression* eval_e1, Expression* eval_e2) {
+Expression* eval_binop_to_int(Expression* b, Type* t1, Type* t2) {
 	// e1 and e2 must have same type
-	assert(eval_e1->type != nullptr); assert(eval_e2->type != nullptr);
-	assert(eval_e1->type->unify(eval_e2->type));
+	assert(t1 != nullptr); assert(t2 != nullptr);
+	assert(t1->unify(t2));
 	// b's type is an int as implied by the function name
 	b->type = ConstantType::make("Int");
 	return b;
 }
 
-Expression* eval_binop_to_int_or_string(Expression* b, Expression* eval_e1, Expression* eval_e2) {
+Expression* eval_binop_to_int_or_string(Expression* b, Type* t1, Type* t2) {
 	// e1 and e2 must have same type
-	assert(eval_e1->type != nullptr); assert(eval_e2->type != nullptr);
-	assert(eval_e1->type->unify(eval_e2->type));
-	// b is e1 or e2's type, doesn't really matter since types match
-	b->type = eval_e1->type;
+	assert(t1 != nullptr); assert(t2 != nullptr);
+	assert(t1->unify(t2));
+	// b is t1 or t2, doesn't really matter since types match
+	b->type = t1;
 	return b;
 }
 
@@ -55,20 +55,6 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 	Expression* e2 = b->get_second();
 	Expression* eval_e1 = eval(e1);
 	Expression* eval_e2 = eval(e2);
-
-	// Only look at type of head (VariableType-h if e is VariableType)
-	eval_e1->type = eval_e1->type->get_hd();
-	eval_e2->type = eval_e2->type->get_hd();
-
-	// If head of e is a list, get its head
-	// do we really want to do this?
-	// should [ [Int, Int], String ] be able to be added to Int ?
-	while (eval_e1->type->get_kind() == TYPE_LIST)
-		eval_e1->type = eval_e1->type->get_hd();
-	while (eval_e2->type->get_kind() == TYPE_LIST)
-		eval_e2->type = eval_e2->type->get_hd();
-
-	// After this point, eval_e1/2 have the types of their heads (or recursive heads, if head is a list)
 
 	switch (b->get_binop_type()) {
 		// for these cases e1 and e2 must be ints
@@ -87,11 +73,11 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 		// for these two it could be ints or strings or lists
 		case EQ:
 		case NEQ:
-			return eval_binop_to_int(b, eval_e1, eval_e2);
+			return eval_binop_to_int(b, eval_e1->type, eval_e2->type);
 
 		// could also be ints or strings here, but so could the result (whereas before the result had to be an int)
 		case PLUS:
-			return eval_binop_to_int_or_string(b, eval_e1, eval_e2);
+			return eval_binop_to_int_or_string(b, eval_e1->type, eval_e2->type);
 
 		case CONS:
 			b->type = ListType::make(eval_e1->type, eval_e2->type);
@@ -355,7 +341,8 @@ Expression* TypeInference::eval(Expression* e) {
 				name += "'";
 			}
 			// finally it all goes to function'''...
-			VariableType* function_eval_type = VariableType::make(name);
+			// VariableType* function_eval_type = VariableType::make(name);
+			Type* function_eval_type = nullptr;
 
 			// put the types of the rest of the expressions into a function type
 			vector<Type*> args;
@@ -370,7 +357,8 @@ Expression* TypeInference::eval(Expression* e) {
 			FunctionType* function_type = FunctionType::make(expression0->to_value(), args);
 			// now take that function type and unify it with expression0's type
 			assert(expression0_eval->type != nullptr);
-			assert(expression0_eval->type->verify(function_type));
+			function_eval_type = expression0_eval->type->verify(function_type);
+			assert(function_eval_type != nullptr);
 
 			// finally the value of the application is function'''...
 			e->type = function_eval_type;

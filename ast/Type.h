@@ -18,6 +18,7 @@ protected:
 	Type(type_kind tk);
 	void set_parent(Type* t);
 	void compute_union(Type* other);
+	bool unify_(Type* other, bool shallow);
 
 	static Type* get_type(Type* t);
 
@@ -28,7 +29,7 @@ public:
 	virtual Type* get_hd();
 	virtual Type* get_tl();
 	bool unify(Type* other);
-	bool verify(Type* other);
+	Type* verify(Type* other);
 	type_kind get_kind();
 	virtual bool operator<(const Type& other) = 0;
 	virtual string to_string() = 0;

@@ -19,7 +19,6 @@ void Type::print_all_types() {
 		cout << (*it)->to_string();
 		cout << " Representative: ";
 		cout <<  (*it)->find()->to_string() << endl;
-		cout << "hi" << endl;
 	}
 	cout << "****************************************************" << endl;
 }
@@ -113,6 +112,11 @@ void Type::compute_union(Type* other) {
 }
 
 bool Type::unify(Type* other) {
+	return unify_(other, false);
+}
+
+bool Type::unify_(Type* other, bool shallow) {
+	if (shallow) cout << "SHALLOW ";
 	cout << "UNIFYING " << to_string() << " with " << other->to_string() << endl;
 	Type* t1 = this->find();
 	Type* t2 = other->find();
@@ -139,7 +143,7 @@ bool Type::unify(Type* other) {
 		size_t size = min(arg1.size(), arg2.size()) - 1;
 		size_t i = 0;
 		for(; i < size; ++i) {
-			if(arg1[i]->unify(arg2[i]) == false) return false;
+			if(arg1[i]->unify_(arg2[i], shallow) == false) return false;
 		}
 		vector<Type*> max;
 		vector<Type*> min;
@@ -161,7 +165,7 @@ bool Type::unify(Type* other) {
 		} else {
 			rest = FunctionType::make("rest", args);
 		}
-		return singleton->unify(rest);
+		return singleton->unify_(rest, shallow);
 	}
 	if(t1->tk == TYPE_VARIABLE || t2->tk == TYPE_VARIABLE) {
 		t1->compute_union(t2);
@@ -173,19 +177,24 @@ bool Type::unify(Type* other) {
 	Type* tl1 = t1->get_tl();
 	Type* hd2 = t2->get_hd();
 	Type* tl2 = t2->get_tl();
-	return hd1->unify(hd2) && tl1->unify(tl2);
+	return hd1->unify_(hd2, shallow) && tl1->unify_(tl2, shallow);
 }
 
-bool Type::verify(Type* other) {
+// return the representative of the type class, but don't actually unify
+Type* Type::verify(Type* other) {
 	map<Type*, Type*> backup; // map from a type pointer to it's parent
 	for (auto it=types.begin(); it!=types.end(); it++) {
 		Type* t = *it;
 		backup[t] = t->parent;
 	}
-	bool res = unify(other);
+
+	bool unify_res = unify_(other, true);
+	Type* result = nullptr;
+	if(unify_res) result = this->parent;
+
 	for (auto it=types.begin(); it!=types.end(); it++) {
 		Type* t = *it;
 		t->parent = backup[t];
 	}
-	return res;
+	return result;
 }

@@ -13,7 +13,7 @@ let _ = print l in
 let _ = print "Adding 2 to each element: " in
 
 fun add with l, n = 
-	if isNil #l then l+n else
+	if isNil #l then !l+n else
 	let hd = !l in
 	let tl = #l in
 	(hd+n)@(add tl n)
