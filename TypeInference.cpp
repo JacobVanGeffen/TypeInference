@@ -410,8 +410,7 @@ TypeInference::TypeInference(Expression* e) {
 	*/
  	Expression* eval_e = eval(e);
 	cout << "final state of unification:" << endl;
-	cout << "passed!" << endl;
 	Type::print_all_types();
-	cout << "passed!" << endl;
+	cout << "passed" << endl;
 	cout << "final type rep: " << eval_e->type->find()->to_string() << endl;
 }

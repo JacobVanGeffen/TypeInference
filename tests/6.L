@@ -1,3 +1,4 @@
+(*final type rep: ConstantType(Int)*)
 fun my_print with x =
   let _ = print "@@" in print x 
 in

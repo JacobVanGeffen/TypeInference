@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -g -Wall -std=c++11
 INC=-. ./ast
 INC_PARAMS=$(foreach d, $(INC), -I$d)
-TESTS=$(patsubst tests/given/%.L,test%,$(sort $(wildcard tests/given/?.L)))
+TESTS=$(patsubst tests/%.L,test%,$(sort $(wildcard tests/*.L)))
 
 OBJs = parser.tab.o lex.yy.o  Expression.o SymbolTable.o frontend.o TypeInference.o AstRead.o AstNil.o AstList.o AstUnOp.o AstBranch.o AstExpressionList.o AstIdentifierList.o AstBinOp.o  AstIdentifier.o AstInt.o AstLambda.o AstLet.o AstString.o Type.o ConstantType.o VariableType.o FunctionType.o ListType.o AlphaType.o
 
@@ -24,8 +24,8 @@ test: $(TESTS);
 
 $(TESTS): test% : parser
 	@echo -n "$*.L ... "
-	-@./l-type-inference tests/given/$*.L > $*.out 2>&1
-	-@((grep -q "passed\!" $*.out) && echo "pass") || echo "failed"
+	-@./l-type-inference tests/$*.L > $*.out 2>&1 || true
+	-@((grep -q "`head -1 tests/$*.L | sed 's/(\*//' | sed 's/\*)//'`" $*.out) && echo "pass") || echo "failed"
 
 clean:
 	rm -f l-type-inference  *.o  parser.output

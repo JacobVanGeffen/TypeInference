@@ -1,6 +1,7 @@
+(*final type rep: [AlphaType, AlphaType]*)
 fun read_list with n =
 	let val = readInt in
-	if n = 0 then Nil else
+	if n = 1 then val else
 	let rest = (read_list (n-1)) in
 	val@rest
 in
