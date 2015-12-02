@@ -29,7 +29,7 @@ public:
 	virtual Type* get_hd();
 	virtual Type* get_tl();
 	bool unify(Type* other);
-	Type* verify(Type* other);
+	Type* verify(Type* other, Type* result_find);
 	type_kind get_kind();
 	virtual bool operator<(const Type& other) = 0;
 	virtual string to_string() = 0;

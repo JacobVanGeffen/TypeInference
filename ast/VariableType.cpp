@@ -27,11 +27,17 @@ string VariableType::get_name() {
 }
 
 Type* VariableType::get_hd() {
-	if (head == nullptr) head = make(name + "-h");
+	if (head == nullptr) make_ht();
 	return head;
 }
 
 Type* VariableType::get_tl() {
-	if (tail == nullptr) tail = make(name + "-t");
+	if (tail == nullptr) make_ht();
 	return tail;
+}
+
+void VariableType::make_ht() {
+	head = make(name + "-h");
+	tail = make(name + "-t");
+	unify(ListType::make(head, tail));
 }

@@ -165,7 +165,9 @@ bool Type::unify_(Type* other, bool shallow) {
 		} else {
 			rest = FunctionType::make("rest", args);
 		}
-		return singleton->unify_(rest, shallow);
+		bool ret = singleton->unify_(rest, shallow);
+		if (shallow) types.erase(rest);
+		return ret;
 	}
 	if(t1->tk == TYPE_VARIABLE || t2->tk == TYPE_VARIABLE) {
 		t1->compute_union(t2);
@@ -180,8 +182,8 @@ bool Type::unify_(Type* other, bool shallow) {
 	return hd1->unify_(hd2, shallow) && tl1->unify_(tl2, shallow);
 }
 
-// return the representative of the type class, but don't actually unify
-Type* Type::verify(Type* other) {
+// return the representative of result_find after unification, but don't actually unify
+Type* Type::verify(Type* other, Type* result_find) {
 	map<Type*, Type*> backup; // map from a type pointer to it's parent
 	for (auto it=types.begin(); it!=types.end(); it++) {
 		Type* t = *it;
@@ -190,7 +192,9 @@ Type* Type::verify(Type* other) {
 
 	bool unify_res = unify_(other, true);
 	Type* result = nullptr;
-	if(unify_res) result = this->parent;
+	if(unify_res) result = result_find->find();
+	cout << "Result ";
+	cout << result->to_string() << endl;
 
 	for (auto it=types.begin(); it!=types.end(); it++) {
 		Type* t = *it;

@@ -131,6 +131,9 @@ Type* compute_msu(Type* t1, Type* t2) {
 
 		string name = "msu(" + t1_fun->get_name() + ", " + t2_fun->get_name() + ")";
 		return FunctionType::make(name, msu_args);
+	} else if ((t1_rep->get_kind() == TYPE_FUNCTION && t2_rep->get_kind() == TYPE_CONSTANT) ||
+				(t2_rep->get_kind() == TYPE_FUNCTION && t1_rep->get_kind() == TYPE_CONSTANT)) {
+		return AlphaType::make();
 	}
 
 	// Types are both lists
@@ -341,8 +344,7 @@ Expression* TypeInference::eval(Expression* e) {
 				name += "'";
 			}
 			// finally it all goes to function'''...
-			// VariableType* function_eval_type = VariableType::make(name);
-			Type* function_eval_type = nullptr;
+			VariableType* function_eval_type = VariableType::make(name);
 
 			// put the types of the rest of the expressions into a function type
 			vector<Type*> args;
@@ -357,11 +359,11 @@ Expression* TypeInference::eval(Expression* e) {
 			FunctionType* function_type = FunctionType::make(expression0->to_value(), args);
 			// now take that function type and unify it with expression0's type
 			assert(expression0_eval->type != nullptr);
-			function_eval_type = expression0_eval->type->verify(function_type);
-			assert(function_eval_type != nullptr);
+			Type* result_type = expression0_eval->type->verify(function_type, function_eval_type);
+			assert(result_type != nullptr);
 
 			// finally the value of the application is function'''...
-			e->type = function_eval_type;
+			e->type = result_type;
 			res_exp = e;
 
 			break;
