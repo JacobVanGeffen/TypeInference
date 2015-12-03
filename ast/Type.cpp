@@ -67,11 +67,11 @@ Type* Type::find() {
 void Type::compute_union(Type* other) {
 	Type* t1 = this->find();
 	Type* t2 = other->find();
-	if(t1->tk == TYPE_ALPHA) {
+	if(t1->tk == TYPE_OMEGA) {
 		t2->set_parent(t1);
 		return;
 	}
-	if(t2->tk == TYPE_ALPHA) {
+	if(t2->tk == TYPE_OMEGA) {
 		t1->set_parent(t2);
 		return;
 	}
@@ -123,12 +123,12 @@ bool Type::unify_(Type* other, bool shallow) {
 	cout << "reps:    " << t1->to_string() << "  ##  " << t2->to_string() << endl;
 	if(t1 == t2) return true;
 
-	if (t1->tk == TYPE_ALPHA) {
+	if (t1->tk == TYPE_OMEGA) {
 		if (t2->tk != TYPE_VARIABLE) return false;
 		t1->compute_union(t2);
 		return true;
 	}
-	if (t2->tk == TYPE_ALPHA) {
+	if (t2->tk == TYPE_OMEGA) {
 		if (t1->tk != TYPE_VARIABLE) return false;
 		t2->compute_union(t1);
 		return true;

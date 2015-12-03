@@ -4,7 +4,7 @@ INC=-. ./ast
 INC_PARAMS=$(foreach d, $(INC), -I$d)
 TESTS=$(patsubst tests/%.L,test%,$(sort $(wildcard tests/*.L)))
 
-OBJs = parser.tab.o lex.yy.o Expression.o frontend.o TypeInference.o AstRead.o AstNil.o AstList.o AstUnOp.o AstBranch.o AstExpressionList.o AstIdentifierList.o AstBinOp.o  AstIdentifier.o AstInt.o AstLambda.o AstLet.o AstString.o Type.o ConstantType.o VariableType.o FunctionType.o ListType.o AlphaType.o
+OBJs = parser.tab.o lex.yy.o Expression.o frontend.o TypeInference.o AstRead.o AstNil.o AstList.o AstUnOp.o AstBranch.o AstExpressionList.o AstIdentifierList.o AstBinOp.o  AstIdentifier.o AstInt.o AstLambda.o AstLet.o AstString.o Type.o ConstantType.o VariableType.o FunctionType.o ListType.o OmegaType.o
 
 default: inference
 

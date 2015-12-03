@@ -2,7 +2,7 @@
 #include "ast/VariableType.h"
 #include "ast/FunctionType.h"
 #include "ast/ListType.h"
-#include "ast/AlphaType.h"
+#include "ast/OmegaType.h"
 #include "ast/expression.h"
 #include "TypeInference.h"
 
@@ -91,16 +91,16 @@ Type* compute_msu(Type* t1, Type* t2) {
 
 	// case by case basis over { ConstantType, VariableType, ListType, FunctionType }
 	if (t1_rep->get_kind() == TYPE_VARIABLE || t2_rep->get_kind() == TYPE_VARIABLE) {
-		return AlphaType::make();
-	} else if (t1_rep->get_kind() == TYPE_ALPHA || t2_rep->get_kind() == TYPE_ALPHA) {
-		return AlphaType::make();
+		return OmegaType::make();
+	} else if (t1_rep->get_kind() == TYPE_OMEGA || t2_rep->get_kind() == TYPE_OMEGA) {
+		return OmegaType::make();
 	} else if (t1_rep->get_kind() == TYPE_CONSTANT && t2_rep->get_kind() == TYPE_CONSTANT) {
 		ConstantType* t1_const = static_cast<ConstantType*>(t1_rep);
 		ConstantType* t2_const = static_cast<ConstantType*>(t2_rep);
 		if (t1_const->get_name() == t2_const->get_name()) {
 			return t1_const; // or t2_const doesn't matter
 		} else {
-			return AlphaType::make();
+			return OmegaType::make();
 		}
 	} else if (t1_rep->get_kind() == TYPE_FUNCTION && t2_rep->get_kind() == TYPE_FUNCTION) {
 		// look through all the args of each function until they don't match, turn that into an alpha type
@@ -119,14 +119,14 @@ Type* compute_msu(Type* t1, Type* t2) {
 
 		// if lists aren't the same size then the last type actually needs to be an alpha
 		if (t1_args.size() != t2_args.size()) {
-			msu_args.back() = AlphaType::make();
+			msu_args.back() = OmegaType::make();
 		}
 
 		string name = "msu(" + t1_fun->get_name() + ", " + t2_fun->get_name() + ")";
 		return FunctionType::make(name, msu_args);
 	} else if ((t1_rep->get_kind() == TYPE_FUNCTION && t2_rep->get_kind() == TYPE_CONSTANT) ||
 				(t2_rep->get_kind() == TYPE_FUNCTION && t1_rep->get_kind() == TYPE_CONSTANT)) {
-		return AlphaType::make();
+		return OmegaType::make();
 	}
 
 	// Types are both lists

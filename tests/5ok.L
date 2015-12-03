@@ -1,4 +1,4 @@
-(*final type rep: \[ConstantType(Int), AlphaType\]*)
+(*final type rep: \[ConstantType(Int), OmegaType\]*)
 fun read_list with n =
 	let val = readInt in
 	if n = 1 then val else

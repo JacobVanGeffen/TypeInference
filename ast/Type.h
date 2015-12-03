@@ -7,7 +7,7 @@ class Type;
 class TypeComparator;
 
 using namespace std;
-enum type_kind {TYPE_CONSTANT, TYPE_FUNCTION, TYPE_VARIABLE, TYPE_LIST, TYPE_ALPHA};
+enum type_kind {TYPE_CONSTANT, TYPE_FUNCTION, TYPE_VARIABLE, TYPE_LIST, TYPE_OMEGA};
 
 class Type {
 private:

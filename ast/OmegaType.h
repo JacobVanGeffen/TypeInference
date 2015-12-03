@@ -1,5 +1,5 @@
-#ifndef ALPHA_TYPE_H_
-#define ALPHA_TYPE_H_
+#ifndef OMEGA_TYPE_H_
+#define OMEGA_TYPE_H_
 
 #include "Type.h"
 
@@ -9,20 +9,20 @@
 
 using namespace std;
 
-class AlphaType: public Type {
+class OmegaType: public Type {
 private:
-	AlphaType();
+	OmegaType();
 
 protected:
-	virtual AlphaType* clone() const {
-		return new AlphaType(*this);
+	virtual OmegaType* clone() const {
+		return new OmegaType(*this);
 	}
 
 public:
-	static AlphaType* make();
+	static OmegaType* make();
 	virtual bool operator<(const Type& other);
 	virtual string to_string();
 	virtual Type* get_tl();
 };
 
-#endif /* FUNCTION_TYPE_H_ */
+#endif /* OMEGA_TYPE_H_ */
