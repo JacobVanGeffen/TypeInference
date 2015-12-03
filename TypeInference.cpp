@@ -6,13 +6,6 @@
 #include "ast/expression.h"
 #include "TypeInference.h"
 
-map<string, VariableType*> renames;
-
-int var_counter = 1;
-string get_new_variable() {
-	return "v" + to_string(var_counter++);
-}
-
 Expression* TypeInference::eval_unop(AstUnOp* b) {
 	Expression* e = eval(b->get_expression());
 	switch (b->get_unop_type()) {
@@ -144,14 +137,16 @@ Type* compute_msu(Type* t1, Type* t2) {
 
 
 AstLambda* TypeInference::eval_lambda(AstLambda* lambda, const string id) {
+	// save gamma
+	gamma.push();
+
 	// lambda x. S1
 	AstIdentifier* formal = lambda->get_formal();
 	Expression* body = lambda->get_body();
 
 	// rename x to generic v*
-	string rename = get_new_variable();
-	VariableType* rename_var = VariableType::make(rename);
-	renames[formal->get_id()] = rename_var;
+	VariableType* formal_type = VariableType::make(formal->get_id());
+	gamma.add(formal, formal_type);
 
 	// make lambda'
 	string lambda_prime_str = id + "'";
@@ -159,7 +154,7 @@ AstLambda* TypeInference::eval_lambda(AstLambda* lambda, const string id) {
 
 	// make lambda's function type
 	vector<Type*> args;
-	args.push_back(rename_var);
+	args.push_back(formal_type);
 	args.push_back(lambda_prime);
 	FunctionType* lambda_type = FunctionType::make(id, args);
 
@@ -176,6 +171,10 @@ AstLambda* TypeInference::eval_lambda(AstLambda* lambda, const string id) {
 
 	// return lambda with it's type
 	lambda->type = lambda_type;
+
+	// restore gamma
+	gamma.pop();
+
 	return lambda;
 }
 
@@ -217,16 +216,14 @@ Expression* TypeInference::eval(Expression* e) {
 			break;
 		}
 
-		case AST_IDENTIFIER: // TODO make sure id's don't overwrite eachother
+		case AST_IDENTIFIER:
 		{
 			AstIdentifier* id = static_cast<AstIdentifier*>(e);
-			// if id has been renamed get it's renamed type, else create var(id)
-			VariableType* id_type;
-			map<string, VariableType*>::iterator rename_ptr = renames.find(id->get_id());
-			if (rename_ptr != renames.end()) { // found it
-				id_type = rename_ptr->second;
-			} else {
-				id_type = VariableType::make(id->get_id());
+
+			VariableType* id_type = gamma.find(id);
+			if (!id_type) {
+				cout << "Identifier " << id->get_id() << " has not been previously bound" << endl;
+				exit(1);
 			}
 
 			e->type = id_type;
@@ -236,11 +233,16 @@ Expression* TypeInference::eval(Expression* e) {
 
 		case AST_LET:
 		{
+			// save gamma
+			gamma.push();
+
 			// let id = S1 in S2
 			AstLet* let = static_cast<AstLet*>(e);
 
 			// eval id
 			AstIdentifier* id = let->get_id();
+			VariableType* id_type = VariableType::make(id->get_id());
+			gamma.add(id, id_type);
 			Expression* id_eval = eval(id);
 
 			// eval S1, as a lambda if needed
@@ -258,6 +260,9 @@ Expression* TypeInference::eval(Expression* e) {
 
 			// eval S2 to keep moving forward
 			res_exp = eval(let->get_body());
+
+			// reset gamma
+			gamma.pop();
 
 			break;
 		}
@@ -308,7 +313,7 @@ Expression* TypeInference::eval(Expression* e) {
 		case AST_LAMBDA:
 		{
 			AstLambda* lambda = static_cast<AstLambda*>(e);
-			res_exp = eval_lambda(lambda, get_new_variable());
+			res_exp = eval_lambda(lambda, "-dummy");
 			break;
 		}
 
@@ -337,7 +342,7 @@ Expression* TypeInference::eval(Expression* e) {
 			if (expression0->get_type() == AST_IDENTIFIER) {
 				name = static_cast<AstIdentifier*>(expression0)->get_id();
 			} else {
-				name = get_new_variable();
+				name = "-dummy";
 			}
 			// tack size of (vector - 1) 's onto it (-1 to not include the function itself)
 			for (uint32_t i=0; i<expressions.size()-1; i++) {
@@ -404,11 +409,9 @@ Expression* get_test() {
 }
 
 TypeInference::TypeInference(Expression* e) {
-	/*
-	Expression* test = get_test();
-	eval(test);
-	*/
+	gamma.push();
  	Expression* eval_e = eval(e);
+	gamma.pop();
 	cout << "final state of unification:" << endl;
 	Type::print_all_types();
 	cout << "passed" << endl;

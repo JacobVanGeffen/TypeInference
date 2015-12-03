@@ -1,12 +1,14 @@
 #ifndef TYPE_INFERENCE_H_
 #define TYPE_INFERENCE_H_
 
+#include "ast/VariableType.h"
 #include "SymbolTable.h"
 
 class Expression;
 
 class TypeInference {
 private:
+	SymbolTable<VariableType> gamma;
 	Expression* program;
 public:
 	TypeInference(Expression* p);

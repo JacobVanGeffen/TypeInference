@@ -1,4 +1,4 @@
-(*final type rep: [AlphaType, AlphaType]*)
+(*final type rep: \[ConstantType(Int), AlphaType\]*)
 fun read_list with n =
 	let val = readInt in
 	if n = 1 then val else
@@ -13,7 +13,7 @@ let _ = print "List entered" in
 let _ = print l in
 let _ = print "Adding 2 to each element: " in
 
-fun add with t, n = 
+fun add with l, n = 
 	if isNil #l then !l+n else
 	let hd = !l in
 	let tl = #l in
