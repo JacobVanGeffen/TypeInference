@@ -156,7 +156,7 @@ bool Type::unify_(Type* other, bool shallow) {
 			return true;
 		}
 		MultiType* multi = static_cast<MultiType*>(t1);
-		vector<Type*> allowed_types = multi->get_allowed_types();
+		set<Type*> allowed_types = multi->get_allowed_types();
 		// if any of the allowed types are t2's type we're good
 		for (auto it = allowed_types.begin(); it != allowed_types.end(); it++) {
 			if ((*it) == t2) {

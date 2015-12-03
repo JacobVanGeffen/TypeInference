@@ -2,9 +2,18 @@
 #include "ListType.h"
 #include "OmegaType.h"
 
-MultiType::MultiType(const string& name, vector<Type*> allowed_types): Type(TYPE_MULTI), name(name), allowed_types(allowed_types) { }
+MultiType::MultiType(const string& name, set<Type*> allowed_types): Type(TYPE_MULTI), name(name), allowed_types(allowed_types) { }
 
-MultiType* MultiType::make(const string& name, vector<Type*> allowed_types) {
+MultiType* MultiType::make(set<Type*> allowed_types) {
+	// name is congolmeration of allowed type's to_string()'s
+	string name = "";
+	string pad = "";
+	for (auto it = allowed_types.begin(); it != allowed_types.end(); it++) {
+		string type_name = (*it)->to_string();
+		name += pad + type_name;
+		pad = ",";
+	}
+
 	MultiType* t = new MultiType(name, allowed_types);
 	t = static_cast<MultiType*>(get_type(t));
 	return t;
@@ -25,7 +34,7 @@ string MultiType::get_name() {
 	return name;
 }
 
-vector<Type*> MultiType::get_allowed_types() {
+set<Type*> MultiType::get_allowed_types() {
 	return allowed_types;
 }
 
@@ -40,10 +49,14 @@ Type* MultiType::get_tl() {
 }
 
 void MultiType::make_ht() {
-	//TODO is this what we really want to do?
-	//head = make(name + "-h");
-	//tail = make(name + "-t");
-	head = OmegaType::make();
-	tail = OmegaType::make();
+	// Assuming that this containts no MultiTypes
+	set<Type*> head_types;
+	set<Type*> tail_types;
+	for (auto it = allowed_types.begin(); it != allowed_types.end(); it++) {
+		head_types.insert((*it)->get_hd());
+		tail_types.insert((*it)->get_tl());
+	}
+	head = make(head_types);
+	tail = make(tail_types);
 	unify(ListType::make(head, tail));
 }

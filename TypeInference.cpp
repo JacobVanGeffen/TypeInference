@@ -11,10 +11,10 @@ Expression* TypeInference::eval_unop(AstUnOp* b) {
 	Expression* e = eval(b->get_expression());
 	switch (b->get_unop_type()) {
 		case HD:
-			b->type = e->type->get_hd();
+			b->type = e->type->find()->get_hd();
 			return b;
 		case TL:
-			b->type = e->type->get_tl();
+			b->type = e->type->find()->get_tl();
 			return b;
 		case ISNIL:
 		case PRINT:
@@ -46,10 +46,10 @@ Expression* eval_binop_to_int_or_string(Expression* b, Type* t1, Type* t2) {
 
 bool unify_IntOrString(Expression* e) {
 	assert(e->type != nullptr);
-	vector<Type*> possible_types;
-	possible_types.push_back(ConstantType::make("Int"));
-	possible_types.push_back(ConstantType::make("String"));
-	MultiType* int_or_string = MultiType::make("IntOrString", possible_types);
+	set<Type*> possible_types;
+	possible_types.insert(ConstantType::make("Int"));
+	possible_types.insert(ConstantType::make("String"));
+	MultiType* int_or_string = MultiType::make(possible_types);
 	return e->type->unify(int_or_string);
 }
 
@@ -424,6 +424,26 @@ Expression* get_test() {
 	AstLet* ll = AstLet::make(AstIdentifier::make("a"), l, apply);
 	return ll;
 }
+
+/* for the future maybe 
+Type* recursive_find(Type* t) {
+	Type* t_rep = t->find();
+	if (t->get_kind() == TYPE_FUNCTION) {
+		FunctionType* fun = static_cast<FunctionType*>(t_rep);
+		vector<Type*> fun_args = fun->get_args();
+		vector<Type*> fun_args_reps;
+		for (auto it = fun_args.begin(); it != fun_args.end(); it++) {
+			fun_args_reps.push_back(recursive_find(*it));
+		}
+		return FunctionType::make(fun->get_name(), fun_args_reps);
+	} else if (t->get_kind() == TYPE_LIST) {
+		ListType* lt = static_cast<ListType*>(t_rep);
+		return ListType::make(recursive_find(lt->get_hd()), recursive_find(lt->get_tl()));
+	} else {
+		return t;
+	}
+}
+*/
 
 TypeInference::TypeInference(Expression* e) {
 	gamma.push();
