@@ -3,6 +3,7 @@
 #include "ast/FunctionType.h"
 #include "ast/ListType.h"
 #include "ast/OmegaType.h"
+#include "ast/MultiType.h"
 #include "ast/expression.h"
 #include "TypeInference.h"
 
@@ -43,6 +44,15 @@ Expression* eval_binop_to_int_or_string(Expression* b, Type* t1, Type* t2) {
 	return b;
 }
 
+bool unify_IntOrString(Expression* e) {
+	assert(e->type != nullptr);
+	vector<Type*> possible_types;
+	possible_types.push_back(ConstantType::make("Int"));
+	possible_types.push_back(ConstantType::make("String"));
+	MultiType* int_or_string = MultiType::make("IntOrString", possible_types);
+	return e->type->unify(int_or_string);
+}
+
 Expression* TypeInference::eval_binop(AstBinOp* b) {
 	Expression* e1 = b->get_first();
 	Expression* e2 = b->get_second();
@@ -60,16 +70,23 @@ Expression* TypeInference::eval_binop(AstBinOp* b) {
 		case LEQ:
 		case GT:
 		case GEQ:
-			assert(eval_e1->type != nullptr);
+		{
+			assert(eval_e1->type != nullptr); assert(eval_e1->type != nullptr);
 			assert(eval_e1->type->unify(ConstantType::make("Int")));
 			assert(eval_e2->type->unify(ConstantType::make("Int")));
-		// for these two it could be ints or strings or lists
+			return eval_binop_to_int(b, eval_e1->type, eval_e2->type);
+		}
+		// for these two it could be ints or strings
 		case EQ:
 		case NEQ:
+			assert(unify_IntOrString(eval_e1));
+			assert(unify_IntOrString(eval_e2));
 			return eval_binop_to_int(b, eval_e1->type, eval_e2->type);
 
 		// could also be ints or strings here, but so could the result (whereas before the result had to be an int)
 		case PLUS:
+			assert(unify_IntOrString(eval_e1));
+			assert(unify_IntOrString(eval_e2));
 			return eval_binop_to_int_or_string(b, eval_e1->type, eval_e2->type);
 
 		case CONS:

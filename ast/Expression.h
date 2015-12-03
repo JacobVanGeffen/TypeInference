@@ -35,20 +35,21 @@ long int string_to_int(const string & s);
  
 class Expression {
 protected:
-    expression_type et;
-    size_t hash_c;
-    static unordered_set<Expression*, hash<Expression*>, exp_eq> expressions;
-    
-    static Expression* get_exp(Expression* e);
-public:
-     Type* type = 0;
-     expression_type get_type() const;
-     virtual string to_string(int depth = 0) = 0;
-     virtual string to_value();
-     virtual Expression* substitute(Expression* e1, Expression* e2) = 0;
-     virtual bool operator==(const Expression& other) = 0;
+	expression_type et;
+	size_t hash_c;
+	static unordered_set<Expression*, hash<Expression*>, exp_eq> expressions;
 
-     size_t get_hash() {return hash_c;};
+	static Expression* get_exp(Expression* e);
+public:
+	virtual ~Expression() = default;
+	Type* type = 0;
+	expression_type get_type() const;
+	virtual string to_string(int depth = 0) = 0;
+	virtual string to_value();
+	virtual Expression* substitute(Expression* e1, Expression* e2) = 0;
+	virtual bool operator==(const Expression& other) = 0;
+
+	size_t get_hash() {return hash_c;};
 };
 
 #endif /* EXPRESSION_H_ */

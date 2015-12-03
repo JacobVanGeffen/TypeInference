@@ -7,7 +7,7 @@ class Type;
 class TypeComparator;
 
 using namespace std;
-enum type_kind {TYPE_CONSTANT, TYPE_FUNCTION, TYPE_VARIABLE, TYPE_LIST, TYPE_OMEGA};
+enum type_kind { TYPE_CONSTANT, TYPE_FUNCTION, TYPE_VARIABLE, TYPE_LIST, TYPE_OMEGA, TYPE_MULTI };
 
 class Type {
 private:
@@ -25,6 +25,7 @@ protected:
 	virtual Type* clone() const = 0;
 
 public:
+	virtual ~Type() = default;
 	Type* find();
 	virtual Type* get_hd();
 	virtual Type* get_tl();

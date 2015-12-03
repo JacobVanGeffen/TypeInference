@@ -1,5 +1,5 @@
- #ifndef VARIABLE_TYPE_H_
-  #define VARIABLE_TYPE_H_
+#ifndef VARIABLE_TYPE_H_
+#define VARIABLE_TYPE_H_
 
 #include "Type.h"
 

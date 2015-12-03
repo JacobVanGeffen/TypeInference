@@ -3,6 +3,7 @@
 #include "ConstantType.h"
 #include "VariableType.h"
 #include "ListType.h"
+#include "MultiType.h"
 #include <iostream>
 #include <map>
 #include <string>
@@ -99,6 +100,14 @@ void Type::compute_union(Type* other) {
 		t1->set_parent(t2);
 		return;
 	}
+	if(t1->tk == TYPE_MULTI) {
+		t2->set_parent(t1);
+		return;
+	}
+	if(t2->tk == TYPE_MULTI) {
+		t1->set_parent(t2);
+		return;
+	}
 	if(t1->tk == TYPE_VARIABLE && t2->tk == TYPE_VARIABLE) {
 		VariableType* vt1 = static_cast<VariableType*>(t1);
 		VariableType* vt2 = static_cast<VariableType*>(t2);
@@ -132,6 +141,30 @@ bool Type::unify_(Type* other, bool shallow) {
 		if (t1->tk != TYPE_VARIABLE) return false;
 		t2->compute_union(t1);
 		return true;
+	}
+
+	if (t1->tk == TYPE_MULTI || t2->tk == TYPE_MULTI) {
+		// make t1 the multitype
+		if (t2->tk == TYPE_MULTI) {
+			auto temp = t1;
+			t1 = t2;
+			t2 = temp;
+		}
+		// if the other type is a variable we always succeed
+		if (t2->tk == TYPE_VARIABLE) {
+			t1->compute_union(t2);
+			return true;
+		}
+		MultiType* multi = static_cast<MultiType*>(t1);
+		vector<Type*> allowed_types = multi->get_allowed_types();
+		// if any of the allowed types are t2's type we're good
+		for (auto it = allowed_types.begin(); it != allowed_types.end(); it++) {
+			if ((*it) == t2) {
+				t1->compute_union(t2);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	if (t1->tk == TYPE_CONSTANT && t2->tk == TYPE_CONSTANT) {
