@@ -1,0 +1,278 @@
+\documentclass[12pt]{article}
+
+%----------Packages----------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathpartir}
+\usepackage{mathtools}
+%\usepackage{amsrefs}
+%\usepackage{dsfont}
+%\usepackage{mathrsfs}
+%\usepackage{stmaryrd}
+%\usepackage[all]{xy}
+\usepackage[mathcal]{eucal}
+\usepackage{verbatim}  %%includes comment environment
+%\usepackage{fullpage}  %%smaller margins
+\usepackage{hyperref}
+\usepackage[left=1in,top=1in,right=1in,bottom=1in]{geometry}
+
+\newcommand{\G}{\Gamma}
+
+\title{CS345H Final Project Report}
+
+\author{Jacob Samuel Van Maynard Geffen \\ (i.e. Samuel Maynard \& Jacob Van Geffen)}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+L's explosion into popularity has taken the tech world by surprise. A terrible language on almost all accounts, L barely has enough features to qualify as lambda calculus. But this would not be the first time the PL field has been surprised at the rise of a language. Instead of repeating the mistakes of our predecessors and ignoring this new and upcoming language, we hope to bring it closer to being an acceptable language. In this paper we lay out formal semantics for a static type system for L, bringing it out of the unstructured dynamic typing chaos and into clean clear rigid definitions of static types. However we want to do this while impacting current L programmers as little as possible, so we have developed a type inference system for L that will operate without any need for type annotations from programmers.
+
+In addition, we add semantics for arbitrarily polymorphic lists, meaning lists that can contain any type at any part of the list. Thus, it will be possible in new L to have a list of \texttt{[5, "duck", lambda x.\ x+x]}. Finally, we allow for polymorphic list types, as the inability to create a "my\_print" function would push programmers away from our language faster than electrons from a negatively polarized magnet.
+
+The meat of this paper is the proof that our new type system obeys both progress and preservation. This means that new L (or as we like to call it JacobSamuelVanMaynardGeffen-L) is type safe, making it one of the very few languages in the world to be so. This is a huge boon for the programming community, as a type safe language means that any program that compiles will never encounter a run time error.
+
+\section{Types}
+
+In this section, we'll enumerate each of the types we've defined for L and explain their purpose. We'll also discuss our general typing structure, which assumes that all types act like lists.
+
+\subsection{List Types}
+L has the unique feature that both the head (\texttt{!}) and tail (\texttt{\#}) operations are defined over any expressions, not just lists. To account for this, we've decided to implicitly define all types with a list structure. Every type \texttt{$\tau$} can also be described by some list type \texttt{[$\tau_1$, $\tau_2$]}. For generic list types, this allows us to define polymorphic lists with any arbitrary structure! For atomic types (Constants, Functions, other non-lists), \texttt{$\tau_1$ = $\tau$} and \texttt{$\tau_2$ = Nil}. As an example, the type \texttt{Int} would be equivalent to the type \texttt{[Int, Nil]}, \texttt{[[Int, Nil], Nil]}, and so on.\\
+To formally describe what values the type $[\tau_1, \tau_2]$ encapsulates, we'll define $\gamma([\tau_1, \tau_2]) = \{[v_1, v_2] | v_1\in\gamma(\tau_1)\ and\ v_2\in\gamma(\tau_2)\}$. Here, we're considering \texttt{[5, Nil]} to be equivalent to \texttt{5}.
+
+\subsection{Constant Types}
+These include \texttt{Int}, \texttt{String}, and \texttt{Nil}. As we discussed in class, an expression cannot have a type that "agrees" with two different Constant types, or a Constant type and a Function type. We'll define this notion of "agreeing" types in a later section.
+
+\subsection{Function Types}
+Any function can be described by $\tau_1\rightarrow\tau_2\rightarrow\ldots\rightarrow\tau_k$, where $\tau_1\ldots\tau_k$ are also types. Notice that $\rightarrow$ is \textbf{not} associative, so $\tau_1\rightarrow(\tau_2\rightarrow\tau_3) \neq (\tau_1\rightarrow\tau_2)\rightarrow\tau_3$.\\
+Note that by our definition of function types, $\gamma(\tau_1\rightarrow\tau_2)$ contains all functions that take elements of $\gamma(\tau_1)$ to elements of $\gamma(\tau_2)$.
+
+\subsection{Variable Types}
+This is our name for polymorphic types. No expression can actually evaluate to a variable type, but variable types \textbf{can} be used within functions. For example, a function that prints an expression would evaluate to the type $v\rightarrow v$. Notice that in this case, the variable names match, since their concrete types must be equivalent. Some functions may include multiple variable types with different names. A function that took in two values but printed only the first would type to $x\rightarrow y\rightarrow x$. In practice, functions with variable types are generated when the equivalence class of a variable type (defined by our type rules) only contains other variable types (i.e. no concrete types).\\
+We'll also define how to find $\gamma$ of some variable function types. $\gamma(x\rightarrow x)$ contains all functions that map any concrete value $v$ to elements of $\gamma(\alpha(v))$. $\gamma(x\rightarrow y)$ contains all functions that map any concrete value $v$ to any other concrete value $u$.
+
+\subsection{MultiTypes}
+This is our name for restricted polymorphic types. Like variable types, MultiTypes can accept expressions of multiple types. However, unlike variable types, MultiTypes can only agree with a finite number of types. For example, a function from the MultiType of \texttt{String} and \texttt{Int} (written \texttt{MT(Int|String)} to the same MultiType can accept either a \texttt{String} or an \texttt{Int}. This function \textbf{cannot} accept any other types, such as a list or \texttt{Nil}. Multitypes allow us to have polymorphic functions that work for both \texttt{Int}s and \texttt{String}s, but not for any other type.\\
+For any MultiType $\tau = [\tau_1, \tau_2]$, $\tau_1$ is a MultiType that allows any type that is a head of some type that $\tau$ allows. Likewise, $\tau_2$ is a MultiType that allows any type that is a tail of some type that $\tau$ allows.
+
+\subsection{Omega Type}
+There are some L expressions that can't evaluate to a single type (e.g. an \texttt{if} that could either evaluate to an \texttt{Int} or \texttt{Nil}). We can't assume anything about the type of these expressions, but as long as the L program doesn't perform an operator on this expression specific to a single type, the program should still type check successfully. Omega type ($\Omega$) is our solution to this problem. Much like the \texttt{Object} type in Java, expressions of type $\Omega$ can act whenever \textbf{any} other type would also suffice. If a specific type or MultiType is required, any expression of $\Omega$ will not type check successfully. We'll show some examples of how $\Omega$ is used in a later section.\\
+Note that for $\Omega = [\tau_1, \tau_2]$, $\tau_1 = \Omega$ and $\tau_2 = \Omega$. This is because no information can be assumed about the head or tail of an expression of type $\Omega$.\\
+Another important note to make is that for any type $\tau$, $\gamma(\tau) \subset \gamma(\Omega)$. This is because $\Omega$ encapsulates all concrete values. 
+
+\section{Agreeing Types and Most Specific Union}
+
+%Include notation for this as well
+
+\subsection{Agreement}
+Agreement is a looser notion of equality that allows us to check if a specific type is allowed by a Variable type or MultiType. If two types agree, then their equivalence classes can be unified without failure. In the typing rules, we'll denote the statement "types $\tau_1$ and $\tau_2$ agree" as $\tau_1\cup\tau_2$. This is very similar to $\tau_1$ being a "sub-type" of $\tau_2$. However, unlike sub-type relationships, agreement relationships are symmetric. This is necessary because in our type system, it is possible to apply a function of type $(\texttt{Int}\rightarrow\texttt{Int})\rightarrow\texttt{Int}$ to an expression of type $MT(\texttt{Int}|\texttt{String})\rightarrow MT(\texttt{Int}|\texttt{String})$.
+
+\subsection{Most Specific Union}
+Our $\Omega$ type allows us to type expressions that could evaluate to many different concrete types. An important insight is that an $\Omega$ type can only originate from an if statement. We need some operation that determines the tightest generalization of the types of both branches of an if statement. We'll call this operation the "most specific union" of two types (written $msu(\tau_1, \tau_2)$. The most specific union of two types produces a type that is the "least general" (i.e. most specific) generalization of both types. For example, $msu(\texttt{Int}, \texttt{Int})$ produces the type $\texttt{Int}$, but $msu(\texttt{Int}, \texttt{String})$ produces the type $\Omega$. $msu$ is also defined recursively on lists, so $msu([\tau_1, \tau_2], [\tau_3, \tau_4]) = [msu(\tau_1, \tau_3), msu(\tau_2, \tau_4)]$. From this, we can conclude that for types $\tau_1$ and $\tau_2$, $\tau_1\in msu(\tau_1, \tau_2)$ and $\tau_2\in msu(\tau_1, \tau_2)$. This fact will be useful in our proof of preservation.
+
+\subsection{Type Union Substitution}
+Since we allow polymophic function types, the function application rules we defined in class won't quite work. Instead, for a function $\tau_1\rightarrow\tau_2$ applied to an expression of $\tau_3$, we need a way of checking that $\tau_1$ and $\tau_3$ agree without actually requiring that the types are equal. We \textbf{also} need a way of evaluating the type of $\tau_2$ under the assumption that $\tau_1$ and $\tau_3$ are equal. To do so, we'll define a "type union substitution" operation that evaluates $\tau_2$ under this assumption.
+
+\section{Type Rules}
+
+%Everything wierd should have been defined in the previous section
+
+Constants and Identifiers
+\[
+\inferrule{Integer\ i}{\G \vdash i : Int}\ \ 
+\inferrule{String\ s}{\G \vdash s : String}\ \ 
+\inferrule{\ }{\G \vdash Nil : Nil}\
+\inferrule{Identifier\ id}{\G \vdash id : \G(id)}\ \
+\]
+\\
+Let Statement
+\[\inferrule{\G \vdash e_1 : \tau_1 \\\\ \G[x\leftarrow a] \vdash e_2 : \tau_2\ (a\ fresh)\\\\ a = \tau_1}{\G \vdash let\ x\ =\ e_1\ in\ e_2 : \tau_2}\]
+\\
+Lambda and Application
+\[
+\inferrule{\G[x\leftarrow a] \vdash e : \tau\ (a\ fresh)}{\G \vdash \lambda x. e : a\rightarrow\tau}\ \ 
+\inferrule{\G \vdash e : \tau_1' \rightarrow ... \rightarrow \tau_k' \rightarrow \tau' \\\\ \forall i\leq k.\ \G \vdash e_i \vdash \tau_i \\\\ \forall i\leq k. \tau_i \cup \tau_i'}{\G \vdash (e\ e_1\ ...\ e_k) : \tau'[\forall i \leq k. \tau_i \cup \tau_i']} 
+\]
+\\
+If Statement
+\[
+\inferrule{\G \vdash e_1 : \tau_1 \\\\ \G \vdash e_2 : \tau_2 \\\\ \G \vdash p : \tau_p \\\\ msu(\tau_1, \tau_2) = \tau_3, \tau_p = Int}{\G \vdash if\ p\ then\ e_1\ else\ e_2 : \tau_3}
+\]
+\\
+Binary Operators (\texttt{Int}s only)
+\[
+\inferrule{\G \vdash e_1 : \tau_1 \\\\ \G \vdash e_2 : \tau_2 \\\\ \tau_1 = Int, \tau_2 = Int}{\G \vdash e_1 \odot e_2 : Int}
+\]
+where $\odot$ can be \texttt{*, -, /, <, <=, >, >=, \&, |}.
+\\\\
+Binary Operators (\texttt{Int}s and \texttt{String}s) %TODO could modify this rule to remove the "a"
+\[
+\inferrule{\G \vdash e_1 : \tau_1 \\\\ \G \vdash e_2 : \tau_1 \\\\ \tau_1\ =\ Int\ or\ String \\\\ \tau_2\ =\ Int\ or\ String \\\\ a = \tau_1, a = \tau_2\ (a\ fresh)}{\G \vdash e_1 \odot e_2 : a}
+\]
+where $\odot$ can be \texttt{+, =, <>}.
+\\\\
+List Operators
+\[
+\inferrule{\G \vdash e_1 : \tau_1 \\\\ \G \vdash e_2 : \tau_2}{\G \vdash e_1 @ e_2 : [\tau_1, \tau_2]}\ \ 
+\inferrule{\G \vdash e : [\tau_1, \tau_2]}{\G \vdash\ !e : \tau_1}\ \ 
+\inferrule{\G \vdash e : [\tau_1, \tau_2]}{\G \vdash \#e : \tau_2}
+\]
+\\
+Other Unary Operators
+\[
+\inferrule{\G \vdash e : \tau}{\G \vdash isNil\ e : Int}\ \ 
+\inferrule{\G \vdash e : \tau}{\G \vdash print\ e : Int}
+\]
+
+\section{Example Programs and their Types}
+
+\begin{enumerate}
+\item The following example demonstrates that the result of a function that evaluates to a $MultiType$ can be fed to a type agnostic function. \\
+\texttt{let f = lambda x.\ if x then 1 else "false" in\\
+let g = lambda y.\ print y in\\
+(g (f 3))} \\
+evaluates to the type \texttt{ConstantType(Int)}, which is the return value of a \texttt{print}.
+
+\item This example demonstrates a function which would run correctly, but our type system excludes. \\ \texttt{let f = if 1 then 3@4 else 5 in\\
+(\#f + 7)}\\
+The if would always evaluate to a list with two $Ints$, but the type system doesn't know that and rejects this program.
+
+\item This example shows off our $OmegaType$.\\
+\texttt{let f = lambda x.\ if x then 1@"duck"@4@42 else 3@"duck"@"quack" in\\
+(f 4)}\\
+evaluates to \texttt{[ConstantType(Int), [ConstantType(String), OmegaType]]}. This not only shows that our system can preserve the $Int$ and $String$ that both lists have at the head, but that it also does not fail because the lists have different pieces internally. Instead, it goes as far as it can and guarantees nothing beyond that with the $OmegaType$.
+\end{enumerate}
+
+\section{Modifications to Semantics}
+
+\subsection{Concatenating \texttt{Nil} to a list}
+
+We've added a special case rule for concatenation that reads
+\[
+\inferrule{E \vdash e_1 : e_1' (e_1' is a list) \\\\ E \vdash e_2 : Nil}{E \vdash e_1@e_2 : [e_1', Nil]}
+\]
+\\
+This means that \texttt{5@Nil} still evaluates to \texttt{5}, but \texttt{(1@2)@Nil} now evaluates to \texttt{[1, 2, Nil]}. If we didn't include this fix, under our typing rules, the tail of \texttt{(1@2)@Nil} would incorrectly type to \texttt{Nil}.
+
+\subsection{Static Scope}
+We now require that L be statically scoped. This means that in any lambda body, all identifiers used must be previously bound. Identifiers in the body that aren't quantified by the lambda retain the type of their most recent definition.\\
+We found that this addition was necessary for our typing of identifiers to succeed. Since the type of any lambda is evaluated using the lambda body, the type of any identifier used in the body must be previously bound.
+\\
+
+\section{Proving Soundness}
+
+To avoid taking up unnecessary space, we'll reference semantic and type rules without re-typing the rule.
+
+\subsection{Showing Progress}
+Since this is a proof by structural induction, we'll assume that each sub-expression types correctly under our typing rules (and can also be evaluated). Then we'll show that the current expression can also be evaluated if it can be successfully typed.
+
+\begin{enumerate}
+\item \textbf{Constants and Identifiers}\\
+All constants successfully type, and all constants can be evaluated, so progress is held.\\
+Identifiers type only if the identifier is bound by $\Gamma$. Since any identifier bound by $\Gamma$ must also be bound by $E$ (see rules for let, lambdas, and application), id's can also only be evaluated if they are bound.
+
+\item \textbf{Let Statements}\\
+For a statement \texttt{let x = a in b} that types successfully, we can assume that \texttt{a} types to type $\tau_1$ and that \texttt{b} types to type $\tau_2$ when \texttt{x} types to $\tau_1$. Since \texttt{a} types, we know that \texttt{a} evaluates to some \texttt{e} of type $\tau_1$. Remember that the above statement can be evaluated if and only if \texttt{b[x$\leftarrow$e]} can be evaluated. This condition is satisfied if we know that \texttt{b} types successfully when \texttt{x} has the same type as \texttt{e}. Our assumptions guarantee this, so the statement can be evaluated. 
+
+\item \textbf{If Statements}\\
+For a statement \texttt{if a then b else c}, we know that \texttt{a} must type to $Int$, \texttt{b} must type to $\tau_1$, and \texttt{c} must type to $\tau_2$. The if statement can always be evaluated as long as \texttt{a} evaluates to an $Int$ and both \texttt{b} and \texttt{c} evaluate successfully. By our assumptions, we know both of these statements are true. Thus, we can evaluate this if statement.
+
+\item \textbf{Lambdas}\\
+Any lambda expression in L will evaluate successfully as long as the body doesn't use any unbound identifiers (since L is now statically scoped). Lambdas will also not type successfully if their body uses an unbound identifier. Thus, any lambda statement that successfully types can also be evaluated.
+
+\item \textbf{Application}\\
+For a statement \texttt{(e e$_1$ ... e$_k$)} that types successfully, we can assume that \texttt{e} types to $\tau_1' \rightarrow ... \rightarrow \tau_k' \rightarrow \tau$ and that each \texttt{e$_i$} types to $\tau_i$. We can also assume that for each $i$, $\tau_i = \tau_i'$, since \texttt{(e e$_1$ ... e$_k$)} only types if we can make this assumption (see "Agreement"). Since each \texttt{e$_i$} types, we know that \texttt{e$_i$} evaluates to some \texttt{e$_i$'}. Under our operational semantics, this expression can evaluate as long as \texttt{e[$\forall i.$x$_i\leftarrow$e$_i$']} can be evaluated. Since \texttt{(e e$_1$ ... e$_k$)} types under the assumption that each $\tau_i$ and $\tau_i'$ agree, we know this statement is true. So \texttt{(e e$_1$ ... e$_k$)} can be evaluated.
+
+\item \textbf{Binary Operations over Integers}\\
+Under our type rules, the expression \texttt{a$\odot$b} types successfully as long as both \texttt{a} and \texttt{b} type to $Int$ (the possible replacements for $\odot$ are discussed in the type rules above). This means that both \texttt{a} and \texttt{b} can be evaluated, and we can perform the $\odot$ operation to both. Thus, under our evaluation semantics, \texttt{a$\odot$b} can also be evaluated.
+
+\item \textbf{Binary Operations over Integers and Strings}\\
+Under our type rules, the expression \texttt{a$\odot$b} types successfully as long as both \texttt{a} and \texttt{b} type to $Int$ or $String$ (and their types are equal). The possible replacements for $\odot$ are discussed in the type rules above. This means that both \texttt{a} and \texttt{b} can be evaluated, and we can perform the $\odot$ operation to both. Thus, under our evaluation semantics, \texttt{a$\odot$b} can also be evaluated.
+
+\item \textbf{Concatenation}\\
+Under our type rules, the expression \texttt{a@b} types successfully as long as both \texttt{a} and \texttt{b} type successfully. This means that both \texttt{a} and \texttt{b} can be evaluated. Thus, under our evaluation semantics, \texttt{a@b} can also be evaluated.
+
+\item \textbf{Head and Tail}\\
+The expressions \texttt{!e} and \texttt{\#e} both type successfully as long as \texttt{e} types successfully. Likewise, \texttt{!e} and \texttt{\#e} can both be evaluated as long as \texttt{e} can be evaluated. Thus, since \texttt{e} types, it can be evaluated, so both expressions can also be evaluated.
+
+\item \textbf{isNil and print}\\
+The expressions \texttt{isNil e} and \texttt{print e} will both evaluate as long as \texttt{e} also successfully evaluates. By our type rules for \texttt{isNil} and \texttt{print} type \texttt{e} to type $\tau$, so \texttt{e} can be evaluated in both cases. Thus, both \texttt{isNil e} and \texttt{print e} can be evaluated.
+
+\end{enumerate}
+
+\subsection{Showing Preservation}
+Since this is a proof by structural induction, we'll assume that each sub-expression hold preservation. Then we'll show that if the current expression evaluates to $v$ and types to $\tau$, then $v\in\gamma(\tau)$.
+
+\begin{enumerate}
+\item \textbf{Constants and Identifiers}\\
+Our operational semantics specify that any constant evaluates to itself. Each constant type includes all constants of that category. Thus, for any constant $v$ and it's corresponding type $\tau$, $v\in\gamma(\tau)$.\\
+To show preservation for identifiers, we'll have to show agreement. For all rules that don't change $E$ or $\G$, we'll inductively assume that $E$ and $\G$ agree. As we discussed in class, for each of the remaining rules, we'll assume preservation holds.\\
+For any let statement \texttt{let x = a in b}, assume that \texttt{a} evaluates to $v$ and types to $\tau_a$. We change both $E$ and $\G$ so that $E(x) = v$ and $\G(x) = \tau_a$. Due to preservation, $v\in\tau_a$, so $E(x)\in\gamma(\G(x))$.\\
+For any application statement \texttt{(e$_1$ e$_2$)}, we know that \texttt{e$_1$} evaluates to \texttt{lambda x.\ e} and types to $\tau_2'\rightarrow\tau'$, and that \texttt{e$_2$} evaluates to $v$ and types to $\tau_2$. We change $E(x) = v$ and $\G(x) = \tau_2'$. Since we have preservation, we know that $v\in\gamma(\tau_2)$. By our assumption that $\tau_2$ and $\tau_2'$ agree, this implies that $v\in\gamma(\tau_2')$. Thus, $E(x)\in\gamma(\G(x))$.\\
+These are the only expressions that change $E$ and $\G$, so we have shown agreement.
+
+\item \textbf{Let Statements}\\
+Consider an expression \texttt{let x = a in b} that evaluates to $v$ and types to $\tau$. We can also assume that \texttt{a} evaluates to $v_a$ and types to $\tau_a$, where $v_a\in\gamma(\tau_a)$. This means that \texttt{b[x$\rightarrow v_a$]} evaluates to $v$ and types to $\tau$. Since our sub-expressions satisfy preservation (by our inductive hypothesis), this means that $v\in\gamma(\tau)$.
+
+\item \textbf{If Statements}\\
+Consider an expression \texttt{if a then b else c}. We'll assume the expression types to type $\tau$ and evaluates to $v$, so \texttt{b} and \texttt{c} must type to $\tau_b$ and $\tau_c$ respectively. By our inductive hypothesis, if \texttt{b} and \texttt{c} evaluate to $v_b$ and $v_c$, then $v_b\in\gamma(\tau_b)$ and $v_c\in\gamma(\tau_c)$. Thus, by our definition of $msu$, and since $\tau = msu(\tau_b, \tau_c)$, $v_b\in\gamma(\tau)$ and $v_c\in\gamma(\tau)$. \texttt{if a then b else c} evaluates to $v$, which is equal to either $v_b$ or $v_c$, so $v\in\gamma(\tau)$.
+
+\item \textbf{Lambdas}\\
+Any expression \texttt{lambda x.\hspace{0.05in}e} can be evaluated, no matter the type (since it evaluates to itself). Let's say that this expression types to $\tau_1\rightarrow\tau_2$. We then know that \texttt{e} types to $\tau_2$ when any occurrence of \texttt{x} in \texttt{e} types to $\tau_1$. By definition, this means that \texttt{lambda x.\ e} is a function that takes elements of $\gamma(\tau_1)$ to elements of $\gamma(\tau_2)$. As we discussed in our section on function types, this means that (\texttt{lambda x.\hspace{0.05in}e})$\in\gamma(\tau_1\rightarrow\tau_2)$.
+
+\item \textbf{Application}\\
+Consider an expression \texttt{(e e$_1$ ... e$_k$)} that evaluates to $v$ and types to $\tau$. We can assume that each \texttt{e$_i$} evaluates to $v_i$ and types to $\tau_i$, and also that $v_i\in\gamma(\tau_i)$. Since \texttt{e} types to $\tau_1\rightarrow ... \rightarrow \tau_k \rightarrow \tau$, we know that \texttt{e} evaluates to a function that maps tuples in $\gamma(\tau_1)\times ... \times\gamma(\tau_k)$ into elements of $\gamma(\tau)$. Since \texttt{(e$_1$, ..., e$_k$)} is in $\gamma(\tau_1)\times ... \times\gamma(\tau_k)$ by our inductive hypothesis, $v$ must be in $\gamma(\tau)$.
+
+\item \textbf{Binary Operations over Integers}\\
+Consider an expression \texttt{a$\odot$b} that evaluates to $v$ and types to $Int$. We can also assume that \texttt{a} and \texttt{b} evaluate to integers (elements of $\gamma(Int)$). Thus, the operation \texttt{a$\odot$b} mathematically produces an integer $i$, and $i\in\gamma(Int)$, so this operation preserves type.
+
+\item \textbf{Binary Operations over Integers and Strings}\\
+Consider an expression \texttt{a$\odot$b} that evaluates to $v$ and types to $Int$ or to $String$. We can also assume that \texttt{a} and \texttt{b} evaluate to integers or strings (elements of $\gamma(Int)$ or $\gamma(String)$). Thus, the operation \texttt{a$\odot$b} produces either an integer $i$ or a string $s$. Either way, $i\in\gamma(Int)$ and $s\in\gamma(String)$, so this operation preserves type.
+
+\item \textbf{Concatenation}\\
+Consider an expression \texttt{a@b} that evaluates to $[v_h, v_t]$ and types to $[\tau_1, \tau_2]$. We know that \texttt{a} evaluates to $v_h$ and types to $\tau_1$, while \texttt{b} evaluates to $v_t$ and types to $\tau_2$. Thus, $v_h\in\gamma(\tau_1)$ and $v_t\in\gamma(\tau_2)$. Remember that $\gamma([\tau_1, \tau_2]) = \{[v_1, v_2] | v_1\in\gamma(\tau_1)\ and\ v_2\in\gamma(\tau_2)\}$, so $[v_h, v_t]\in\gamma([\tau_1, \tau_2])$.
+
+\item \textbf{Head and Tail}\\
+For both expressions \texttt{!e} and \texttt{\#e}, we'll assume that \texttt{e} evaluates to $[v_h, v_t]$ and types to $[\tau_1, \tau_2]$. We'll also say that \texttt{!e} evaluates to $v_h$ and \texttt{\#e} evaluates to $v_t$ (by our operational semantics). In our section on list types, we noted that $\gamma([\tau_1, \tau_2]) = \{[v_1, v_2] | v_1\in\gamma(\tau_1)\ and\ v_2\in\gamma(\tau_2)\}$. By our inductive hypothesis, we can assume that $[v_h, v_t]\in\gamma(\tau_1)$. Thus, $v_h\in\gamma(\tau_1)$ and $v_t\in\gamma(\tau_2)$.
+
+\item \textbf{isNil and print}\\
+Both expressions \texttt{isNil e} and \texttt{print e} evaluate to integers and type to $Int$. As we discussed in the section on Constants, for any integer $i$, $i\in\gamma(Int)$.
+
+\end{enumerate}
+
+\section{Modifications to Test Cases}
+Actual modifications can be found in the test folder.
+
+\subsection{Test 4}
+Under our type rules, this program does not type successfully. This is because \texttt{g} is undefined in the function \texttt{f}. Under our type rules, when \texttt{lambda x.\hspace{0.05in}\dots\hspace{0.05in}(g x)} is typed, since $\G(g)$ is undefined, the program fails to type. We decided this was an acceptable change because under the proposed rules in the slides, this program fails to type as well.
+
+\subsection{Test 5}
+Due to our changes in semantics, we've modified the base case of \texttt{read\underline{\ }list} to return an \texttt{Int}. This way, we can infer that the return value of \texttt{read\underline{\ }list} is of type \texttt{[Int, $\Omega$]}. We've also changed \texttt{l+n} in \texttt{add} to \texttt{!l+n}, because at this point, all the type system knows about \texttt{l} is that \texttt{l}'s head is an \texttt{Int}.
+
+\section{Other Shortcomings and Possible Future Work}
+
+\subsection{Unbound Identifiers in Lambdas}
+As we mentioned in the above section, though unbound identifiers would originally evaluate perfectly fine, they will not type check properly. We believe that our change to static scoping is well founded, but we do lose some expressivity. Programmers can no longer write functions with unbound identifiers in the hopes that the id's will be defined before the function is used. However, static scoping does allow for cleaner and easier-to-read code, so we think this change is acceptable.
+
+\subsection{Casting}
+One feature we'd like to add if given more time is type casting. This would allow users to cast expressions with general types (like $\Omega$) to concrete atomic and list types. This would allow programmers to use expressions with type $\Omega$. However, doing so would void the soundness of our type system. We'd still be able to prevent impossible casts (like casting \texttt{"duck"} to an \texttt{Int}), but other casts might fail at run-time instead. Still, casting would allow for even more expressivity in our language. 
+
+\section{Conclusion}
+
+"I am the Alpha and the Omega, the first and the last, the beginning and the end" - Revelation 22:13. We were given the $\alpha$ type to represent any possible type, but this did not suit our needs. We are not accepting gods, we are wrathful and jealous gods. We needed an ending type. A type which would accept no other type. We needed the $\Omega$. The last. The end. With $\Omega$ we can allow for the creation of functions statements that return a $String$ or an $Int$ or a $Nil$, something programmers commonly need, but also make sure that no invalid operations are used on this 'unknown' type. Truly, $\Omega$ is our crowning achievement.
+
+Oh, we also did completely polymorphic list types I guess. Those are cool. Lists are no longer restricted to just $ConstantTypes$, they can be lists of $FunctionTypes$, $ListTypes$, $ConstantTypes$, even $OmegaTypes$ interspersed randomly as desired. This is extremely useful because it allowed for more complex data structures, like maps or trees. Random access polymorphism is accomplished by removing the difference between atoms and lists. By making every atom behave like a list we can avoid the need for two rules for processing head and tail operations, the primary difficulty in making polymorphic lists.
+
+Our third, and perhaps most underwhelming when compared with the power of $\Omega$, accomplishment is polymorphic functions. Polymorphic functions fall out of the $OmegaType$ and $MultiType$ definitions. If a function can evaluate to an $Int$ or a $String$ we say the return type is a $MultiType$ of $Int$ and $String$. Note that this can be used arbitrarily, so that in theory a function could return a $MulitType$ of $Int$ and $Int\rightarrow Int$, it's just that this particular $MultiType$ is the equivalent of $\Omega$ (since no operation besides a type agnostic one such as \texttt{print} can be applied to it).
+
+We hope that these additions to the L language will increase the already surging popularity of the language, and that programmers will not be displeased with our copyright on this new version of L: JacobSamuelVanMaynardGeffen\textcopyright.
+
+\section{Running our Tests}
+\texttt{make test}\\
+The expected output is contained in a comment in the top of every file.
+
+\end{document}
