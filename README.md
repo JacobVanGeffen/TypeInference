@@ -2,7 +2,7 @@
 This project, done for [Dr. Thomas Dillig's](http://www.cs.utexas.edu/~tdillig/) [CS345h (programming languages)](http://www.cs.utexas.edu/~tdillig/cs345H/), demonstrates static type inference over a dummy language, L.
 
 ## L
-Most of the details of the L programming language, including the formal syntax and semantics, can be found in the L-reference pdf. A brief description of L follows.
+Most of the details of the L programming language, including the formal syntax and semantics, can be found in the L-reference pdf. The sample program (sample.L) takes in student grades for individual assignments and outputs their overall grade. A brief description of L follows.
 
 ### Overview of L
 A primitive language heavily based on lambda calculus, L does not quite require use of the Y-combinator. Basic arithmetic expressions evaluate as expected; `(3+6-1)*2` evaluates to `16`. Conditional expressions are of the form `if e1 then e2 else e3`, where a non-zero `e1` causes the whole if statement to evaluate to the value of `e2`, otherwise it evaluates to the value of `e3`. The logical operators `=`, `<>`, `<`, ,`<=`, `>`, `>=`, `&`, and `|` evaluate as expected. Variables can be assigned with a let binding in the form `let x = e1 in e2`. Lambda expressions are of the form `lambda x1, x2, ..., xn . e`. Function definitions are a shortcut for a let binding to a lambda and are of the form `fun f with x1, ..., xn = e in e'`. List operators are `@` for concatenation (`1@2` makes the list `[1, 2]`), `isNil e`, `!e` for head, and `#e` for tail.
